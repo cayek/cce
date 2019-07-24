@@ -1,0 +1,32 @@
+---
+- name: Create user group
+  group:
+    name: "{{ username }}"
+    state: present
+
+- name: Create user
+  user:
+    name: "{{ username }}"
+    state: present
+    group: "{{ username }}"
+
+- name: Create extra bin path
+  file:
+    path: '{{extra_bin_path}}'
+    group: "{{username}}"
+    owner: "{{username}}"
+    state: directory
+
+- name: add {{extra_bin_path}} to path
+  lineinfile: 
+    dest: "/home/{{username}}/.zshenv"
+    state: present
+    regexp: 'export PATH=(["]*)((?!.*?{{extra_bin_path}}).*?):\$PATH(["]*)$'
+    line: export PATH=\1\2:{{extra_bin_path}}:$PATH\3
+    backrefs: yes
+
+- name: create projects folder
+  file:
+    path: "/home/{{username}}/projects/opensource/"
+    state: directory
+    recurse: yes

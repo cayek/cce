@@ -1,0 +1,38 @@
+---
+- hosts: all
+
+  pre_tasks:
+    - import_tasks: tasks/users.yml
+      tags: users
+
+  roles:
+    - role: geerlingguy.docker
+      tags:
+        - docker
+        - skip_ansible_lint
+      when: (docker_enabled | default(False))
+      
+  tasks:
+  - import_tasks: tasks/core.yml
+    tags: core
+
+  - import_tasks: tasks/docker.yml
+    when: (docker_enabled | default(False))
+    tags: docker
+
+  - import_tasks: tasks/emacs.yml
+    when: (emacs_enabled | default(False))
+    tags: emacs
+
+  - import_tasks: tasks/org.yml
+    when: (org_enabled | default(False))
+    tags: org
+
+  - import_tasks: tasks/r.yml
+    when: (r_enabled | default(False))
+    tags: r
+
+
+  - import_tasks: tasks/inspiration.yml
+    when: (inspiration_enabled | default(False))
+    tags: inspiration

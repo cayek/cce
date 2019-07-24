@@ -1,0 +1,1329 @@
+# -*- mode: org -*-
+# -*- coding: utf-8 -*-
+
+#+TITLE:      CCE
+#+AUTHOR:      Kevin Caye
+
+#+PROPERTY: header-args    :mkdirp yes
+
+* Installation and Usage
+** requirements
+#+BEGIN_SRC yaml :tangle requirements.yml
+---
+- name: geerlingguy.docker
+  version: 2.5.2
+#+END_SRC
+** inventory
+Create a ./inventory.yml file: 
+#+BEGIN_SRC yaml :tangle inventory_dist.yml
+all:
+  hosts:
+    localhost
+  vars:
+    ansible_connection: local
+    ansible_sudo_pass: ""
+#+END_SRC
+
+You can encrypt this file with 
+#+BEGIN_SRC shell
+ansible-vault create inventory.yml
+#+END_SRC
+** Variables
+Create variables
+#+BEGIN_SRC yaml :tangle group_vars/all.yml
+###
+### Complete Computing Environment Features
+###
+# Set these options to true or false to toggle specific features
+
+docker_enabled: false
+emacs_enabled: true
+org_enabled: true
+r_enabled: true
+
+###
+### General
+###
+# Sets your username
+username: "cayek"
+pyvenv_path: "/home/{{username}}/.pyvenv"
+extra_bin_path: "/home/{{username}}/.bin"
+
+###
+### emacs
+###
+
+spacemacs_dotdirectory: "/home/{{username}}/.spacemacs.d"
+spacemacs_repo: "git@github.com:cayek/spacemacs.git"
+
+###
+### Docker
+###
+# Where you want Docker to store images
+docker_image_directory: "{{ docker_home }}/data"
+
+# Where you want Docker to store its container data.
+docker_home: /mnt/docker
+
+# Docker storage driver, see https://docs.docker.com/storage/storagedriver/select-storage-driver/#supported-backing-filesystems
+# You might want to change this to ZFS, depending on your underlying filesystem.
+docker_storage_driver: overlay2
+
+###
+### inspiration
+###
+inspiration_enabled: True
+#+END_SRC
+
+define your personal variables in ./group_vars/: 
+#+BEGIN_SRC yaml :tangle group_vars/localhost_dist.yml
+###
+### Complete Computing Environment Personal variables
+###
+
+#+END_SRC
+** Main yaml Tasks file
+#+NAME: code_cce
+#+BEGIN_SRC yaml :tangle cce.yml
+---
+- hosts: all
+
+  pre_tasks:
+    - import_tasks: tasks/users.yml
+      tags: users
+
+  roles:
+    - role: geerlingguy.docker
+      tags:
+        - docker
+        - skip_ansible_lint
+      when: (docker_enabled | default(False))
+      
+  tasks:
+  - import_tasks: tasks/core.yml
+    tags: core
+
+  - import_tasks: tasks/docker.yml
+    when: (docker_enabled | default(False))
+    tags: docker
+
+  - import_tasks: tasks/emacs.yml
+    when: (emacs_enabled | default(False))
+    tags: emacs
+
+  - import_tasks: tasks/org.yml
+    when: (org_enabled | default(False))
+    tags: org
+
+  - import_tasks: tasks/r.yml
+    when: (r_enabled | default(False))
+    tags: r
+
+
+  - import_tasks: tasks/inspiration.yml
+    when: (inspiration_enabled | default(False))
+    tags: inspiration
+
+
+#+END_SRC
+
+** run all 
+Run the playbook with: 
+#+BEGIN_SRC shell :tangle cce.sh
+#!/bin/bash
+test -f /usr/bin/apt && sudo apt install ansible
+
+make all
+#+END_SRC
+* Users
+#+BEGIN_SRC yaml :tangle tasks/users.yml 
+---
+- name: Create user group
+  group:
+    name: "{{ username }}"
+    state: present
+
+- name: Create user
+  user:
+    name: "{{ username }}"
+    state: present
+    group: "{{ username }}"
+
+- name: Create extra bin path
+  file:
+    path: '{{extra_bin_path}}'
+    group: "{{username}}"
+    owner: "{{username}}"
+    state: directory
+
+- name: add {{extra_bin_path}} to path
+  lineinfile: 
+    dest: "/home/{{username}}/.zshenv"
+    state: present
+    regexp: 'export PATH=(["]*)((?!.*?{{extra_bin_path}}).*?):\$PATH(["]*)$'
+    line: export PATH=\1\2:{{extra_bin_path}}:$PATH\3
+    backrefs: yes
+
+- name: create projects folder
+  file:
+    path: "/home/{{username}}/projects/opensource/"
+    state: directory
+    recurse: yes
+#+END_SRC
+* Core
+#+BEGIN_SRC yaml :tangle tasks/core.yml 
+---
+- name: install core packages
+  apt:
+    name: ['zsh', 'ispell', 'aspell-fr', 'pass', 'vim', 'git', 'make', 'msmtp', 'isync', 'htop', 'curl', 'tmux', 'silversearcher-ag', 'ctags', 'unison']
+    state: latest
+    install_recommends: yes
+    update_cache: yes
+  become: yes
+
+- name: Install python ansible in virtualenv .pyvenv
+  pip: 
+    virtualenv_python: python3.6
+    virtualenv: "{{pyvenv_path}}"
+    virtualenv_site_packages: yes
+    name: ['ansible==2.7', 'ansible-lint']
+    state: present
+  
+- name: Install python tools in .pyvenv 
+  pip: 
+    virtualenv_python: python3.6
+    virtualenv: "{{pyvenv_path}}"
+    virtualenv_site_packages: yes
+    name: ['cookiecutter', 'mkdocs', 'dvc', 'academic']
+    state: present
+
+- name: Create symlink for python tools
+  file: 
+    src: '{{pyvenv_path}}/bin/{{ item }}'
+    dest: '{{extra_bin_path}}/{{ item }}'
+    state: link
+  with_items:
+    - cookiecutter
+    - mkdocs
+    - dvc
+    - academic
+    - ansible
+    - ansible-config
+    - ansible-connection
+    - ansible-console
+    - ansible-doc
+    - ansible-galaxy
+    - ansible-inventory
+    - ansible-playbook
+    - ansible-pull
+    - ansible-vault
+    - ansible-lint
+#+END_SRC
+
+* Graphics software
+#+BEGIN_SRC yaml :tangle tasks/xsoft.yml 
+- name: install graphic packages
+  apt:
+    name: ['okular', 'eog', 'unison-gtk']
+    state: latest
+    install_recommends: yes
+    update_cache: yes
+  become: yes
+#+END_SRC
+* emacs and spacemacs
+#+BEGIN_SRC yaml :tangle tasks/emacs.yml 
+---
+- name: add emacs repo
+  apt_repository:
+    repo: "ppa:kelleyk/emacs"
+    state: present
+  become: yes
+
+- name: install emacs
+  apt:
+    name: ['emacs26']
+    state: latest
+    install_recommends: yes
+    update_cache: yes
+  become: yes
+
+- name: Clone spacemacs develop
+  git:
+    repo: "{{spacemacs_repo}}"
+    dest: ~/.emacs.d/
+    accept_hostkey: yes
+    version: develop
+    key_file: "/home/{{username}}/.ssh/id_rsa"
+
+- name: Check if font is installed
+  stat: path='/home/{{username}}/.fonts/SourceCodePro-Bold.otf'
+  register: font_path
+
+- name: Download font files
+  get_url:
+    url: https://github.com/adobe-fonts/source-code-pro/archive/2.030R-ro/1.050R-it.zip
+    dest: /tmp/source-code-pro.zip 
+  when: font_path.stat.exists == false
+  become_user: "{{username}}"
+
+- name: Extract font files
+  unarchive:
+    src: /tmp/source-code-pro.zip 
+    dest: /tmp/
+  when: font_path.stat.exists == false
+  become_user: "{{username}}"
+
+- name: Create font dir
+  file:
+    path: '/home/{{username}}/.fonts/'
+    state: directory
+  when: font_path.stat.exists == false
+  become_user: "{{username}}"
+
+- name: Copy font files 
+  shell: cp -v /tmp/source-code-pro*/OTF/*.otf ~/.fonts/
+  when: font_path.stat.exists == false
+  become_user: "{{username}}"
+
+- name: Update fc-cache
+  shell: fc-cache -f
+  when: font_path.stat.exists == false
+  become_user: "{{username}}"
+
+- name: Create spacemacs configuration directory 
+  file:
+    path: '{{spacemacs_dotdirectory}}'
+    state: directory
+  become_user: "{{username}}"
+#+END_SRC
+** spacemacs configuration file
+
+#+BEGIN_SRC yaml :tangle tasks/emacs.yml 
+- name: spacemacs.el 
+  template:
+    src: emacs/spacemacs.el
+    dest: "/home/{{username}}/.spacemacs"
+    owner: "{{username}}"
+    group: "{{username}}"
+    force: no
+#+END_SRC
+*** Spacemacs layers
+
+Define my layers and additional packages
+
+#+BEGIN_SRC elisp :tangle ./templates/emacs/spacemacs.el
+(defun dotspacemacs/layers ()
+  "Layer configuration:
+This function should only modify configuration layer settings."
+  (setq-default
+   ;; Base distribution to use. This is a layer contained in the directory
+   ;; `+distribution'. For now available distributions are `spacemacs-base'
+   ;; or `spacemacs'. (default 'spacemacs)
+   dotspacemacs-distribution 'spacemacs
+
+   ;; Lazy installation of layers (i.e. layers are installed only when a file
+   ;; with a supported type is opened). Possible values are `all', `unused'
+   ;; and `nil'. `unused' will lazy install only unused layers (i.e. layers
+   ;; not listed in variable `dotspacemacs-configuration-layers'), `all' will
+   ;; lazy install any layer that support lazy installation even the layers
+   ;; listed in `dotspacemacs-configuration-layers'. `nil' disable the lazy
+   ;; installation feature and you have to explicitly list a layer in the
+   ;; variable `dotspacemacs-configuration-layers' to install it.
+   ;; (default 'unused)
+   dotspacemacs-enable-lazy-installation 'unused
+
+   ;; If non-nil then Spacemacs will ask for confirmation before installing
+   ;; a layer lazily. (default t)
+   dotspacemacs-ask-for-lazy-installation t
+
+   ;; If non-nil layers with lazy install support are lazy installed.
+   ;; List of additional paths where to look for configuration layers.
+   ;; Paths must have a trailing slash (i.e. `~/.mycontribs/')
+   dotspacemacs-configuration-layer-path '()
+
+   ;; List of configuration layers to load.
+   dotspacemacs-configuration-layers
+   '(
+     pdf
+     ess
+     bibtex
+     ansible
+     systemd
+     pass
+     csv
+     docker
+     emoji
+     notmuch
+     search-engine
+     windows-scripts
+     javascript
+     yaml
+     html
+     (python :variables python-test-runner 'pytest)
+     helm
+     (auto-completion :variables auto-completion-enable-help-tooltip 'manual
+                      auto-completion-enable-snippets-in-popup t
+                      auto-completion-private-snippets-directory "~/cce/snippets/"
+                      )
+     better-defaults
+     emacs-lisp
+     git
+     (markdown :variables
+               markdown-enable-math nil)
+     multiple-cursors
+     treemacs
+     (org :variables
+          org-enable-reveal-js-support t
+          org-enable-github-support t)
+     (shell :variables
+            shell-default-height 30
+            shell-default-position 'bottom)
+     spell-checking
+     (syntax-checking :variables
+                      syntax-checking-enable-by-default nil
+                      syntax-checking-enable-tooltips nil)
+     version-control
+     restclient
+     rust
+     (elfeed :variables
+             rmh-elfeed-org-files (list "~/box-cloud/feeds/feeds.org")
+             elfeed-db-directory "~/box-cloud/feeds/.elfeed")
+     )
+
+   ;; List of additional packages that will be installed without being
+   ;; wrapped in a layer. If you need some configuration for these
+   ;; packages, then consider creating a layer. You can also put the
+   ;; configuration in `dotspacemacs/user-config'.
+   ;; To use a local version of a package, use the `:location' property:
+   ;; '(your-package :location "~/path/to/your-package/")
+   ;; Also include the dependencies as they will not be resolved automatically.
+   dotspacemacs-additional-packages '(ob-ipython
+                                      (ox-ipynb :location (recipe :fetcher github :repo "jkitchin/ox-ipynb"))
+                                      (ox-hugo :location (recipe :fetcher github :repo "kaushalmodi/ox-hugo"))
+                                      helm-org-rifle
+                                      conda
+                                      anki-editor
+                                      eval-in-repl
+                                      calfw
+                                      calfw-ical
+                                      ;; for R markdown
+                                      ;; polymode
+                                      ;; poly-R
+                                      ;; poly-noweb
+                                      ;; poly-markdown
+                                      ;; learning
+                                      pamparam
+                                      org-noter
+                                      )
+
+   ;; A list of packages that cannot be updated.
+   dotspacemacs-frozen-packages '()
+
+   ;; A list of packages that will not be installed and loaded.
+   dotspacemacs-excluded-packages '(
+                                    )
+
+   ;; Defines the behaviour of Spacemacs when installing packages.
+   ;; Possible values are `used-only', `used-but-keep-unused' and `all'.
+   ;; `used-only' installs only explicitly used packages and deletes any unused
+   ;; packages as well as their unused dependencies. `used-but-keep-unused'
+   ;; installs only the used packages but won't delete unused ones. `all'
+   ;; installs *all* packages supported by Spacemacs and never uninstalls them.
+   ;; (default is `used-only')
+   dotspacemacs-install-packages 'used-only))
+#+END_SRC
+
+*** Spacemacs init
+#+BEGIN_SRC elisp :tangle ./templates/emacs/spacemacs.el
+(defun dotspacemacs/init ()
+  "Initialization:
+This function is called at the very beginning of Spacemacs startup,
+before layer configuration.
+It should only modify the values of Spacemacs settings."
+
+  ;; This setq-default sexp is an exhaustive list of all the supported
+  ;; spacemacs settings.
+  (setq-default
+   ;; If non-nil then enable support for the portable dumper. You'll need
+   ;; to compile Emacs 27 from source following the instructions in file
+   ;; EXPERIMENTAL.org at to root of the git repository.
+   ;; (default nil)
+   dotspacemacs-enable-emacs-pdumper nil
+
+   ;; File path pointing to emacs 27.1 executable compiled with support
+   ;; for the portable dumper (this is currently the branch pdumper).
+   ;; (default "emacs-27.0.50")
+   dotspacemacs-emacs-pdumper-executable-file "emacs-27.0.50"
+
+   ;; Name of the Spacemacs dump file. This is the file will be created by the
+   ;; portable dumper in the cache directory under dumps sub-directory.
+   ;; To load it when starting Emacs add the parameter `--dump-file'
+   ;; when invoking Emacs 27.1 executable on the command line, for instance:
+   ;;   ./emacs --dump-file=~/.emacs.d/.cache/dumps/spacemacs.pdmp
+   ;; (default spacemacs.pdmp)
+   dotspacemacs-emacs-dumper-dump-file "spacemacs.pdmp"
+
+   ;; If non-nil ELPA repositories are contacted via HTTPS whenever it's
+   ;; possible. Set it to nil if you have no way to use HTTPS in your
+   ;; environment, otherwise it is strongly recommended to let it set to t.
+   ;; This variable has no effect if Emacs is launched with the parameter
+   ;; `--insecure' which forces the value of this variable to nil.
+   ;; (default t)
+   dotspacemacs-elpa-https t
+
+   ;; Maximum allowed time in seconds to contact an ELPA repository.
+   ;; (default 5)
+   dotspacemacs-elpa-timeout 5
+
+   ;; Set `gc-cons-threshold' and `gc-cons-percentage' when startup finishes.
+   ;; This is an advanced option and should not be changed unless you suspect
+   ;; performance issues due to garbage collection operations.
+   ;; (default '(100000000 0.1))
+   dotspacemacs-gc-cons '(100000000 0.1)
+
+   ;; If non-nil then Spacelpa repository is the primary source to install
+   ;; a locked version of packages. If nil then Spacemacs will install the
+   ;; latest version of packages from MELPA. (default nil)
+   dotspacemacs-use-spacelpa nil
+
+   ;; If non-nil then verify the signature for downloaded Spacelpa archives.
+   ;; (default nil)
+   dotspacemacs-verify-spacelpa-archives nil
+
+   ;; If non-nil then spacemacs will check for updates at startup
+   ;; when the current branch is not `develop'. Note that checking for
+   ;; new versions works via git commands, thus it calls GitHub services
+   ;; whenever you start Emacs. (default nil)
+   dotspacemacs-check-for-update nil
+
+   ;; If non-nil, a form that evaluates to a package directory. For example, to
+   ;; use different package directories for different Emacs versions, set this
+   ;; to `emacs-version'. (default 'emacs-version)
+   dotspacemacs-elpa-subdirectory 'emacs-version
+
+   ;; One of `vim', `emacs' or `hybrid'.
+   ;; `hybrid' is like `vim' except that `insert state' is replaced by the
+   ;; `hybrid state' with `emacs' key bindings. The value can also be a list
+   ;; with `:variables' keyword (similar to layers). Check the editing styles
+   ;; section of the documentation for details on available variables.
+   ;; (default 'vim)
+   dotspacemacs-editing-style 'vim
+
+   ;; If non-nil output loading progress in `*Messages*' buffer. (default nil)
+   dotspacemacs-verbose-loading nil
+
+   ;; Specify the startup banner. Default value is `official', it displays
+   ;; the official spacemacs logo. An integer value is the index of text
+   ;; banner, `random' chooses a random text banner in `core/banners'
+   ;; directory. A string value must be a path to an image format supported
+   ;; by your Emacs build.
+   ;; If the value is nil then no banner is displayed. (default 'official)
+   dotspacemacs-startup-banner 'official
+
+   ;; List of items to show in startup buffer or an association list of
+   ;; the form `(list-type . list-size)`. If nil then it is disabled.
+   ;; Possible values for list-type are:
+   ;; `recents' `bookmarks' `projects' `agenda' `todos'.
+   ;; List sizes may be nil, in which case
+   ;; `spacemacs-buffer-startup-lists-length' takes effect.
+   dotspacemacs-startup-lists '((recents . 5)
+                                (projects . 7))
+
+   ;; True if the home buffer should respond to resize events. (default t)
+   dotspacemacs-startup-buffer-responsive t
+
+   ;; Default major mode of the scratch buffer (default `text-mode')
+   dotspacemacs-scratch-mode 'text-mode
+
+   ;; Initial message in the scratch buffer, such as "Welcome to Spacemacs!"
+   ;; (default nil)
+   dotspacemacs-initial-scratch-message nil
+
+   ;; List of themes, the first of the list is loaded when spacemacs starts.
+   ;; Press `SPC T n' to cycle to the next theme in the list (works great
+   ;; with 2 themes variants, one dark and one light)
+   dotspacemacs-themes '(monokai
+                         spacemacs-dark
+                         spacemacs-light)
+
+   ;; Set the theme for the Spaceline. Supported themes are `spacemacs',
+   ;; `all-the-icons', `custom', `doom', `vim-powerline' and `vanilla'. The
+   ;; first three are spaceline themes. `doom' is the doom-emacs mode-line.
+   ;; `vanilla' is default Emacs mode-line. `custom' is a user defined themes,
+   ;; refer to the DOCUMENTATION.org for more info on how to create your own
+   ;; spaceline theme. Value can be a symbol or list with additional properties.
+   ;; (default '(spacemacs :separator wave :separator-scale 1.5))
+   dotspacemacs-mode-line-theme '(spacemacs :separator wave :separator-scale 1.5)
+
+   ;; If non-nil the cursor color matches the state color in GUI Emacs.
+   ;; (default t)
+   dotspacemacs-colorize-cursor-according-to-state t
+
+   ;; Default font, or prioritized list of fonts. `powerline-scale' allows to
+   ;; quickly tweak the mode-line size to make separators look not too crappy.
+   dotspacemacs-default-font '("Source Code Pro"
+                               :size 17
+                               :weight normal
+                               :width normal)
+
+   ;; The leader key (default "SPC")
+   dotspacemacs-leader-key "SPC"
+
+   ;; The key used for Emacs commands `M-x' (after pressing on the leader key).
+   ;; (default "SPC")
+   dotspacemacs-emacs-command-key "SPC"
+
+   ;; The key used for Vim Ex commands (default ":")
+   dotspacemacs-ex-command-key ":"
+
+   ;; The leader key accessible in `emacs state' and `insert state'
+   ;; (default "M-m")
+   dotspacemacs-emacs-leader-key "M-m"
+
+   ;; Major mode leader key is a shortcut key which is the equivalent of
+   ;; pressing `<leader> m`. Set it to `nil` to disable it. (default ",")
+   dotspacemacs-major-mode-leader-key ","
+
+   ;; Major mode leader key accessible in `emacs state' and `insert state'.
+   ;; (default "C-M-m")
+   dotspacemacs-major-mode-emacs-leader-key "C-M-m"
+
+   ;; These variables control whether separate commands are bound in the GUI to
+   ;; the key pairs `C-i', `TAB' and `C-m', `RET'.
+   ;; Setting it to a non-nil value, allows for separate commands under `C-i'
+   ;; and TAB or `C-m' and `RET'.
+   ;; In the terminal, these pairs are generally indistinguishable, so this only
+   ;; works in the GUI. (default nil)
+   dotspacemacs-distinguish-gui-tab nil
+
+   ;; Name of the default layout (default "Default")
+   dotspacemacs-default-layout-name "Default"
+
+   ;; If non-nil the default layout name is displayed in the mode-line.
+   ;; (default nil)
+   dotspacemacs-display-default-layout nil
+
+   ;; If non-nil then the last auto saved layouts are resumed automatically upon
+   ;; start. (default nil)
+   dotspacemacs-auto-resume-layouts nil
+
+   ;; If non-nil, auto-generate layout name when creating new layouts. Only has
+   ;; effect when using the "jump to layout by number" commands. (default nil)
+   dotspacemacs-auto-generate-layout-names nil
+
+   ;; Size (in MB) above which spacemacs will prompt to open the large file
+   ;; literally to avoid performance issues. Opening a file literally means that
+   ;; no major mode or minor modes are active. (default is 1)
+   dotspacemacs-large-file-size 1
+
+   ;; Location where to auto-save files. Possible values are `original' to
+   ;; auto-save the file in-place, `cache' to auto-save the file to another
+   ;; file stored in the cache directory and `nil' to disable auto-saving.
+   ;; (default 'cache)
+   dotspacemacs-auto-save-file-location 'cache
+
+   ;; Maximum number of rollback slots to keep in the cache. (default 5)
+   dotspacemacs-max-rollback-slots 5
+
+   ;; If non-nil, the paste transient-state is enabled. While enabled, after you
+   ;; paste something, pressing `C-j' and `C-k' several times cycles through the
+   ;; elements in the `kill-ring'. (default nil)
+   dotspacemacs-enable-paste-transient-state nil
+
+   ;; Which-key delay in seconds. The which-key buffer is the popup listing
+   ;; the commands bound to the current keystroke sequence. (default 0.4)
+   dotspacemacs-which-key-delay 0.4
+
+   ;; Which-key frame position. Possible values are `right', `bottom' and
+   ;; `right-then-bottom'. right-then-bottom tries to display the frame to the
+   ;; right; if there is insufficient space it displays it at the bottom.
+   ;; (default 'bottom)
+   dotspacemacs-which-key-position 'bottom
+
+   ;; Control where `switch-to-buffer' displays the buffer. If nil,
+   ;; `switch-to-buffer' displays the buffer in the current window even if
+   ;; another same-purpose window is available. If non-nil, `switch-to-buffer'
+   ;; displays the buffer in a same-purpose window even if the buffer can be
+   ;; displayed in the current window. (default nil)
+   dotspacemacs-switch-to-buffer-prefers-purpose nil
+
+   ;; If non-nil a progress bar is displayed when spacemacs is loading. This
+   ;; may increase the boot time on some systems and emacs builds, set it to
+   ;; nil to boost the loading time. (default t)
+   dotspacemacs-loading-progress-bar t
+
+   ;; If non-nil the frame is fullscreen when Emacs starts up. (default nil)
+   ;; (Emacs 24.4+ only)
+   dotspacemacs-fullscreen-at-startup nil
+
+   ;; If non-nil `spacemacs/toggle-fullscreen' will not use native fullscreen.
+   ;; Use to disable fullscreen animations in OSX. (default nil)
+   dotspacemacs-fullscreen-use-non-native nil
+
+   ;; If non-nil the frame is maximized when Emacs starts up.
+   ;; Takes effect only if `dotspacemacs-fullscreen-at-startup' is nil.
+   ;; (default nil) (Emacs 24.4+ only)
+   dotspacemacs-maximized-at-startup nil
+
+   ;; A value from the range (0..100), in increasing opacity, which describes
+   ;; the transparency level of a frame when it's active or selected.
+   ;; Transparency can be toggled through `toggle-transparency'. (default 90)
+   dotspacemacs-active-transparency 90
+
+   ;; A value from the range (0..100), in increasing opacity, which describes
+   ;; the transparency level of a frame when it's inactive or deselected.
+   ;; Transparency can be toggled through `toggle-transparency'. (default 90)
+   dotspacemacs-inactive-transparency 90
+
+   ;; If non-nil show the titles of transient states. (default t)
+   dotspacemacs-show-transient-state-title t
+
+   ;; If non-nil show the color guide hint for transient state keys. (default t)
+   dotspacemacs-show-transient-state-color-guide t
+
+   ;; If non-nil unicode symbols are displayed in the mode line.
+   ;; If you use Emacs as a daemon and wants unicode characters only in GUI set
+   ;; the value to quoted `display-graphic-p'. (default t)
+   dotspacemacs-mode-line-unicode-symbols t
+
+   ;; If non-nil smooth scrolling (native-scrolling) is enabled. Smooth
+   ;; scrolling overrides the default behavior of Emacs which recenters point
+   ;; when it reaches the top or bottom of the screen. (default t)
+   dotspacemacs-smooth-scrolling t
+
+   ;; Control line numbers activation.
+   ;; If set to `t' or `relative' line numbers are turned on in all `prog-mode' and
+   ;; `text-mode' derivatives. If set to `relative', line numbers are relative.
+   ;; This variable can also be set to a property list for finer control:
+   ;; '(:relative nil
+   ;;   :disabled-for-modes dired-mode
+   ;;                       doc-view-mode
+   ;;                       markdown-mode
+   ;;                       org-mode
+   ;;                       pdf-view-mode
+   ;;                       text-mode
+   ;;   :size-limit-kb 1000)
+   ;; (default nil)
+   dotspacemacs-line-numbers nil
+
+   ;; Code folding method. Possible values are `evil' and `origami'.
+   ;; (default 'evil)
+   dotspacemacs-folding-method 'evil
+
+   ;; If non-nil `smartparens-strict-mode' will be enabled in programming modes.
+   ;; (default nil)
+   dotspacemacs-smartparens-strict-mode nil
+
+   ;; If non-nil pressing the closing parenthesis `)' key in insert mode passes
+   ;; over any automatically added closing parenthesis, bracket, quote, etc…
+   ;; This can be temporary disabled by pressing `C-q' before `)'. (default nil)
+   dotspacemacs-smart-closing-parenthesis nil
+
+   ;; Select a scope to highlight delimiters. Possible values are `any',
+   ;; `current', `all' or `nil'. Default is `all' (highlight any scope and
+   ;; emphasis the current one). (default 'all)
+   dotspacemacs-highlight-delimiters 'all
+
+   ;; If non-nil, start an Emacs server if one is not already running.
+   ;; (default nil)
+   dotspacemacs-enable-server nil
+
+   ;; Set the emacs server socket location.
+   ;; If nil, uses whatever the Emacs default is, otherwise a directory path
+   ;; like \"~/.emacs.d/server\". It has no effect if
+   ;; `dotspacemacs-enable-server' is nil.
+   ;; (default nil)
+   dotspacemacs-server-socket-dir nil
+
+   ;; If non-nil, advise quit functions to keep server open when quitting.
+   ;; (default nil)
+   dotspacemacs-persistent-server nil
+
+   ;; List of search tool executable names. Spacemacs uses the first installed
+   ;; tool of the list. Supported tools are `rg', `ag', `pt', `ack' and `grep'.
+   ;; (default '("rg" "ag" "pt" "ack" "grep"))
+   dotspacemacs-search-tools '("rg" "ag" "pt" "ack" "grep")
+
+   ;; Format specification for setting the frame title.
+   ;; %a - the `abbreviated-file-name', or `buffer-name'
+   ;; %t - `projectile-project-name'
+   ;; %I - `invocation-name'
+   ;; %S - `system-name'
+   ;; %U - contents of $USER
+   ;; %b - buffer name
+   ;; %f - visited file name
+   ;; %F - frame name
+   ;; %s - process status
+   ;; %p - percent of buffer above top of window, or Top, Bot or All
+   ;; %P - percent of buffer above bottom of window, perhaps plus Top, or Bot or All
+   ;; %m - mode name
+   ;; %n - Narrow if appropriate
+   ;; %z - mnemonics of buffer, terminal, and keyboard coding systems
+   ;; %Z - like %z, but including the end-of-line format
+   ;; (default "%I@%S")
+   dotspacemacs-frame-title-format "%I@%S"
+
+   ;; Format specification for setting the icon title format
+   ;; (default nil - same as frame-title-format)
+   dotspacemacs-icon-title-format nil
+
+   ;; Delete whitespace while saving buffer. Possible values are `all'
+   ;; to aggressively delete empty line and long sequences of whitespace,
+   ;; `trailing' to delete only the whitespace at end of lines, `changed' to
+   ;; delete only whitespace for changed lines or `nil' to disable cleanup.
+   ;; (default nil)
+   dotspacemacs-whitespace-cleanup nil
+
+   ;; Either nil or a number of seconds. If non-nil zone out after the specified
+   ;; number of seconds. (default nil)
+   dotspacemacs-zone-out-when-idle nil
+
+   ;; Run `spacemacs/prettify-org-buffer' when
+   ;; visiting README.org files of Spacemacs.
+   ;; (default nil)
+   dotspacemacs-pretty-docs nil)
+
+  )
+#+END_SRC
+
+*** Spacemacs user env
+#+BEGIN_SRC elisp :tangle ./templates/emacs/spacemacs.el
+(defun dotspacemacs/user-env ()
+  "Environment variables setup.
+This function defines the environment variables for your Emacs session. By
+default it calls `spacemacs/load-spacemacs-env' which loads the environment
+variables declared in `~/.spacemacs.env' or `~/.spacemacs.d/.spacemacs.env'.
+See the header of this file for more information."
+  (spacemacs/load-spacemacs-env))
+#+END_SRC
+
+*** Spacemacs user init
+#+BEGIN_SRC elisp :tangle ./templates/emacs/spacemacs.el
+(defun dotspacemacs/user-init ()
+  "Initialization for user code:
+This function is called immediately after `dotspacemacs/init', before layer
+configuration.
+It is mostly for variables that should be set before packages are loaded.
+If you are unsure, try setting them in `dotspacemacs/user-config' first."
+  )
+#+END_SRC
+
+*** Spacemacs user load
+#+BEGIN_SRC elisp :tangle ./templates/emacs/spacemacs.el
+(defun dotspacemacs/user-load ()
+  "Library to load while dumping.
+This function is called only while dumping Spacemacs configuration. You can
+`require' or `load' the libraries of your choice that will be included in the
+dump."
+  )
+#+END_SRC
+
+*** Spacemacs user config
+Where we load the rest of the config plus system specific variables.
+#+BEGIN_SRC elisp :tangle ./templates/emacs/spacemacs.el
+(defun dotspacemacs/user-config ()
+  "Configuration for user code:
+This function is called at the very end of Spacemacs startup, after layer
+configuration.
+Put your configuration code here, except for variables that should be set
+before packages are loaded."
+
+  (defun load-directory (dir)
+    (let ((load-it (lambda (f)
+                     (load-file (concat (file-name-as-directory dir) f)))
+                   ))
+      (mapc load-it (directory-files dir nil "\\.el$"))))
+  (load-directory "{{spacemacs_dotdirectory}}")
+)
+#+END_SRC
+
+** base emacs configuration
+#+BEGIN_SRC emacs-lisp :tangle ./templates/emacs/base.el
+(require 'server)
+(or (server-running-p)
+    (server-start))
+
+;; inline image size
+(setq org-image-actual-width '(300))
+
+;; google translate see: https://github.com/atykhonov/google-translate
+(require 'google-translate)
+(require 'google-translate-smooth-ui)
+(global-set-key "\C-ct" 'google-translate-smooth-translate)
+
+(setq google-translate-translation-directions-alist
+      '(("en" . "fr") ("fr" . "en")))
+
+;; flyspell default
+(setq flyspell-default-dictionary "en_US")
+#+END_SRC
+
+#+BEGIN_SRC yaml :tangle tasks/emacs.yml 
+- name: spacemacs base.el 
+  template:
+    src: emacs/base.el
+    dest: "{{spacemacs_dotdirectory}}/base.el"
+#+END_SRC
+
+* Orgmode
+:LOGBOOK:
+- Note taken on [2019-07-24 mer. 15:23] \\
+  integrate new orgmode 9.2 [[https://orgmode.org/Changes.html][changes]]
+:END:
+
+#+BEGIN_SRC yaml :tangle tasks/org.yml 
+- name: emacs org.el 
+  template:
+    src: emacs/org.el
+    dest: "{{spacemacs_dotdirectory}}/org.el"
+#+END_SRC
+
+** General
+#+BEGIN_SRC emacs-lisp :tangle ./templates/emacs/org.el
+(require 'org)
+(require 'org-protocol)
+
+;; startup
+(setq org-src-preserve-indentation t)
+(setq org-startup-indented t)
+(setq org-log-into-drawer t)
+(setq org-startup-with-inline-images t)
+(setq org-startup-folded t)
+#+END_SRC
+** refile
+#+BEGIN_SRC emacs-lisp :tangle ./templates/emacs/org.el
+;; Targets include this file and any file contributing to the agenda - up to 9 levels deep
+(setq org-refile-targets (quote ((nil :maxlevel . 2)
+                                 (org-agenda-files :maxlevel . 2))))
+#+END_SRC
+
+** Organization and agenda
+*** Capture
+#+BEGIN_SRC emacs-lisp :tangle ./templates/emacs/org.el
+(setq org-directory "~/org/")
+(setq org-default-notes-file "~/org/INBOX.org")
+
+;; Capture templates for: TODO tasks, Notes, appointments, phone calls, meetings, and org-protocol
+(setq org-capture-templates
+      (quote (("t" "todo" entry (file "~/org/INBOX.org")
+               "* TODO %?\n%U\n%a\n" :clock-in t :clock-resume t)
+              ("r" "respond" entry (file "~/org/INBOX.org")
+               "* NEXT Respond to %:from on %:subject\nSCHEDULED: %t\n%U\n%a\n" :clock-in t :clock-resume t :immediate-finish t)
+              ("n" "note" entry (file "~/org/INBOX.org")
+               "* %? :NOTE:\n%U\n%a\n" :clock-in t :clock-resume t)
+              ("j" "Journal" entry (file+datetree "~/org/diary.org")
+               "* %?\n%U\n" :clock-in t :clock-resume t)
+              ("m" "Meeting" entry (file "~/org/INBOX.org")
+               "* MEETING with %? :MEETING:\n%U" :clock-in t :clock-resume t)
+              ("p" "Phone call" entry (file "~/org/INBOX.org")
+               "* PHONE %? :PHONE:\n%U" :clock-in t :clock-resume t)
+              )))
+#+END_SRC
+*** Tags and states definition
+#+BEGIN_SRC emacs-lisp :tangle ./templates/emacs/org.el
+;; Tags with fast selection keys
+(setq org-tag-alist (quote ((:startgroup)
+                            ;; who is the client/owner ?
+                            ("@se" . ?s)
+                            ("@kaizen" . ?k)
+                            ("@home" . ?h)
+                            (:endgroup)
+                            )))
+
+(setq org-todo-keywords
+      (quote ((sequence "TODO(t)" "NEXT(n)" "|" "DONE(d)")
+              (sequence "WAITING(w@/!)" "HOLD(h@/!)" "|" "CANCELLED(c@/!)" "PHONE" "MEETING"))))
+
+(setq org-todo-keyword-faces
+      (quote (("TODO" :foreground "red" :weight bold)
+              ("NEXT" :foreground "blue" :weight bold)
+              ("DONE" :foreground "forest green" :weight bold)
+              ("WAITING" :foreground "orange" :weight bold)
+              ("HOLD" :foreground "magenta" :weight bold)
+              ("CANCELLED" :foreground "forest green" :weight bold)
+              ("MEETING" :foreground "forest green" :weight bold)
+              ("PHONE" :foreground "forest green" :weight bold))))
+#+END_SRC
+*** Agenda file and view
+#+BEGIN_SRC emacs-lisp :tangle ./templates/emacs/org.el
+(setq org-agenda-files (quote ("~/org/"
+                               "~/mobile-org/inbox.org")))
+#+END_SRC
+
+*** Clock setup
+#+BEGIN_SRC emacs-lisp :tangle ./templates/emacs/org.el
+;; Resume clocking task when emacs is restarted
+(org-clock-persistence-insinuate)
+;;
+;; Show lot of clocking history so it's easy to pick items off the C-F11 list
+(setq org-clock-history-length 23)
+;; Resume clocking task on clock-in if the clock is open
+(setq org-clock-in-resume t)
+;; Separate drawers for clocking and logs
+(setq org-drawers (quote ("PROPERTIES" "LOGBOOK")))
+;; Save clock data and state changes and notes in the LOGBOOK drawer
+(setq org-clock-into-drawer t)
+;; Sometimes I change tasks I'm clocking quickly - this removes clocked tasks with 0:00 duration
+(setq org-clock-out-remove-zero-time-clocks t)
+;; Clock out when moving task to a done state
+(setq org-clock-out-when-done t)
+;; Save the running clock and all clock history when exiting Emacs, load it on startup
+(setq org-clock-persist t)
+;; Do not prompt to resume an active clock
+(setq org-clock-persist-query-resume nil)
+;; Enable auto clock resolution for finding open clocks
+(setq org-clock-auto-clock-resolution (quote when-no-clock-is-running))
+;; Include current clocking task in clock reports
+(setq org-clock-report-include-clocking-task t)
+#+END_SRC
+
+#+RESULTS: elisp_org_clock
+: t
+*** Report Setup
+#+BEGIN_SRC emacs-lisp :tangle ./templates/emacs/org.el
+#+NAME: elisp_org_clock
+;; Agenda clock report parameters
+(setq org-agenda-clockreport-parameter-plist
+      (quote (:link t :maxlevel 1 :fileskip0 t :compact t :narrow 80)))
+#+END_SRC
+
+*** Archive
+#+BEGIN_SRC emacs-lisp :tangle ./templates/emacs/org.el
+(setq org-archive-location "~/org/archive/%s::")
+#+END_SRC
+** key binding
+#+BEGIN_SRC emacs-lisp :tangle ./templates/emacs/org.el
+(defun cayek:open_proj_inbox ()
+  (interactive)
+  (find-file-existing "~/org/INBOX.org")
+  )
+
+(defun cayek:open_cce()
+  (interactive)
+  (find-file-existing "~/cce/cce.org")
+  )
+
+(defun cayek:open_diary()
+  (interactive)
+  (find-file-existing "~/org/diary.org")
+  )
+
+;; org files
+(global-set-key (kbd "<f1>") 'cayek:open_proj_inbox)
+(global-set-key (kbd "<f2>") 'cayek:open_proj_diary)
+(global-set-key (kbd "<f4>") 'cayek:open_cce)
+
+;; agenda key bindings
+(global-set-key (kbd "<f9>") 'org-agenda)
+#+END_SRC
+** Org babel
+#+BEGIN_SRC emacs-lisp :tangle ./templates/emacs/org.el
+(with-eval-after-load 'org
+  (require 'ob-ipython)
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '(
+     (shell . t)
+     (python . t)
+     (R . t)
+     (ipython . t)
+     (dot . t)
+     (org . t)
+     (makefile . t)
+     (emacs-lisp . t)
+     (http . t)
+     ))
+  )
+#+END_SRC
+** org-rifle
+Very nice package: [[https://github.com/alphapapa/helm-org-rifle][alphapapa/helm-org-rifle]].
+#+BEGIN_SRC emacs-lisp :tangle ./templates/emacs/org.el
+(defun cayek:org-rifle-archive ()
+  (interactive)
+  (helm-org-rifle-directories "~/org/archive/")
+  )
+
+(defun cayek:org-rifle-bookmark ()
+  (interactive)
+  (helm-org-rifle-directories "~/mobile-org/")
+  )
+
+;; search
+(global-set-key (kbd "<f5>") 'helm-org-rifle-current-buffer)
+(global-set-key (kbd "<f6>") 'helm-org-rifle-agenda-files)
+(global-set-key (kbd "<f7>") 'cayek:org-rifle-archive)
+(global-set-key (kbd "<f8>") 'cayek:org-rifle-bookmark)
+#+END_SRC
+
+** org projectile
+#+BEGIN_SRC emacs-lisp :tangle ./templates/emacs/org.el
+(defvar cayek:topo_proj_template "
+:PROPERTIES:
+:CREATED:  %U
+:EFFORT:   1d
+:INCHARGE: cayek
+:END:
+
+,*Objectives:*
+
+,*Actions:*
+
+,*Blocking points:*
+
+,*Remarks:*
+
+")
+
+;; org projectile
+(require 'org-projectile)
+
+(setq org-projectile-projects-file "~/org/projects.org")
+(org-projectile-single-file)
+(setq  org-projectile-capture-template
+       (format "%s%s" "* TODO %?" cayek:topo_proj_template))
+(global-set-key (kbd "C-c n p") 'org-projectile-capture-for-current-project)
+
+;; Outgoing email (msmtp + msmtpq)
+(setq send-mail-function 'sendmail-send-it
+      sendmail-program "/usr/bin/msmtp"
+      mail-specify-envelope-from t
+      message-sendmail-envelope-from 'header
+      mail-envelope-from 'header)
+#+END_SRC
+* mail
+#+BEGIN_SRC yaml :tangle tasks/mail.yml 
+- name: emacs mail.el 
+  template:
+    src: emacs/mail.el
+    dest: "{{spacemacs_dotdirectory}}/mail.el"
+#+END_SRC
+** emacs
+#+BEGIN_SRC emacs-lisp :tangle ./templates/emacs/mail.el
+;; Outgoing email (msmtp + msmtpq)
+(setq send-mail-function 'sendmail-send-it
+      sendmail-program "/usr/bin/msmtp"
+      mail-specify-envelope-from t
+      message-sendmail-envelope-from 'header
+      mail-envelope-from 'header)
+#+END_SRC
+
+*** TODO Send html mail with orgmode
+I use the  [[https://github.com/org-mime/org-mime][org-mime]] packages: 
+
+#+NAME: elisp_org_sendmail
+#+BEGIN_SRC emacs-lisp
+(require 'org-mime)
+
+(setq org-mime-export-options '(:section-numbers nil
+                                                 :with-author nil
+                                                 :with-toc nil))
+#+END_SRC
+
+* calendar
+* nextcloud
+* python
+*features*
+- relp in emacs with [[https://github.com/kaz-yos/eval-in-repl][eval-in-repl]]
+** ansible
+#+BEGIN_SRC yaml :tangle tasks/python.yaml :mkdirp yes
+- name: install python core packages
+  apt:
+    name: [python, python-virtualenv, python-dev, python-setuptools, python-pip, python3, python3-setuptools, python3-dev, python3-pip]
+    state: present
+    install_recommends: yes
+    update_cache: yes
+  become: yes
+
+#+END_SRC
+** emacs
+#+BEGIN_SRC emacs-lisp :tangle ./templates/emacs/python.el
+(require 'python)
+
+;; to see env with pyvenv: https://emacs.stackexchange.com/questions/20092/using-conda-environments-in-emacs
+(setenv "WORKON_HOME" "/home/{{username}}/.virtualenvs/")
+
+(require 'eval-in-repl-python)
+(setq eir-repl-placement 'below)
+(setq eir-always-split-script-window t)
+(add-hook 'python-mode-hook
+          '(lambda ()
+             (local-set-key (kbd "<C-return>") 'eir-eval-in-python)))
+#+END_SRC
+* R
+*Features*
+- install R
+- install R main packages for user
+** ansible
+#+BEGIN_SRC yaml :tangle tasks/r.yml
+- name: apt key for R
+  apt_key:
+    keyserver: keyserver.ubuntu.com
+    id: E084DAB9
+  become: yes
+
+- name: apt repo for R
+  apt_repository:
+    repo: deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran35/
+    state: present
+  become: yes
+
+- name: install R packages
+  apt:
+    name: ['r-base', 'r-recommended', 'r-base-core']
+    state: latest
+    install_recommends: yes
+    update_cache: yes
+  become: yes
+
+- name: install deps for R pacakges
+  apt:
+    name: ['libssl-dev', 'libcurl4-openssl-dev', 'libxml2-dev']
+    state: present
+    install_recommends: yes
+    update_cache: yes
+  become: yes
+
+- name: create local R library folder
+  file:
+    path: "/home/{{username}}/R/x86_64-pc-linux-gnu-library/3.6/"
+    state: directory
+    recurse: yes
+
+- name: Clone cayekR my R utils package
+  git:
+    repo: git@github.com:cayek/cayekR.git
+    dest: '/home/{{username}}/projects/opensource/cayekR'
+    accept_hostkey: yes
+
+- name: install a few R packages
+  command: /usr/bin/Rscript --slave --no-save --no-restore-history /home/{{username}}/projects/opensource/cayekR/R/install.R
+#+END_SRC
+* Bibliotheque
+*features*
+- Reference management in emacs with [[https://github.com/jkitchin/org-ref][jkitchin/org-ref]]
+** ansible
+** emacs
+#+BEGIN_SRC emacs-lisp :tangle templates/emacs/bibliotheque.el
+(require 'org-ref)
+
+(setq org-ref-default-bibliography '("~/bibliotheque/papers/references.bib")
+      org-ref-pdf-directory "~/bibliotheque/papers/"
+      org-ref-bibliography-notes "~/bibliotheque/papers/notes.org")
+#+END_SRC
+* docker
+#+BEGIN_SRC yaml :tangle tasks/docker.yml
+---
+- name: install python3-pip
+  apt:
+    name: python3-pip
+    state: present
+  register: result
+  until: result is succeeded
+
+- name: 'Install docker-py'
+  pip:
+    name: docker-py
+    state: present
+  register: result
+  until: result is succeeded
+
+- name: create docker home
+  file:
+    path: "{{ docker_home }}"
+    mode: 0755
+    state: directory
+
+- name: add user account to docker group
+  user:
+    name: "{{ ansible_nas_user }}"
+    group: docker
+    append: yes
+
+- name: update docker home from install default
+  template:
+    src: docker/daemon.json
+    dest: /etc/docker/daemon.json
+  register: docker_config
+
+- name: restart docker
+  service:
+     name: docker
+     state: restarted
+  when: docker_config.changed
+  tags:
+    - skip_ansible_lint
+#+END_SRC
+
+#+BEGIN_SRC json :tangle templates/docker/daemon.json
+{
+  "data-root": "{{ docker_image_directory }}",
+  "storage-driver": "{{ docker_storage_driver }}"
+}
+#+END_SRC
+
+* Some Inspiring Projects
+#+BEGIN_SRC yaml :tangle tasks/inspiration.yml
+- name: Create src dir
+  file:
+    path: '/home/{{username}}/.src/'
+    state: directory
+  become_user: "{{username}}"
+
+- name: Clone afew
+  git: repo=https://github.com/afewmail/afew.git
+       dest=~/.src/afew
+       accept_hostkey=yes
+  become_user: "{{username}}"
+
+- name: Clone org-html-themes
+  git: repo=https://github.com/fniessen/org-html-themes.git
+       dest=~/.src/org-html-themes
+       accept_hostkey=yes
+  become_user: "{{username}}"
+
+- name: Clone worgle
+  git: repo=https://github.com/OrgTangle/Worgle.git
+       dest=~/.src/Worgle
+       accept_hostkey=yes
+  become_user: "{{username}}"
+
+## install tomb: https://www.dyne.org/software/tomb/
+- name: Clone tomb
+  git: repo=https://github.com/dyne/Tomb.git
+       dest=~/.src/Tomb
+       accept_hostkey=yes
+  become_user: "{{username}}"
+
+- name: install packages dependencies for tomb
+  action: apt pkg={{ item }} state=present install_recommends=yes
+  become: yes
+  with_items:
+    - gnupg
+    - cryptsetup
+    - pinentry-curses
+    - steghide
+
+# - name: install tomb
+#   become: yes
+#   make:
+#     chdir: /home/{{local_username}}/.src/Tomb
+#     target: install
+ 
+- name: Fetch ansible nas
+  git:
+    repo: https://github.com/davestephens/ansible-nas.git
+    dest: /home/{{username}}/.src/ansible-nas
+  become_user: "{{username}}"
+
+- name: Fetch ansible reveal.js
+  git:
+    repo: https://github.com/hakimel/reveal.js.git
+    dest: /home/{{username}}/.src/reveal.js
+  become_user: "{{username}}"
+
+- name: Clone grasp
+  git:
+    repo: https://github.com/karlicoss/grasp.git
+    dest: /home/{{username}}/.src/grasp
+  become_user: "{{username}}"
+#+END_SRC

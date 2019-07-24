@@ -1,0 +1,7 @@
+- name: install graphic packages
+  apt:
+    name: ['okular', 'eog', 'unison-gtk']
+    state: latest
+    install_recommends: yes
+    update_cache: yes
+  become: yes

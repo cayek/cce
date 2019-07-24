@@ -1,0 +1,76 @@
+---
+- name: add emacs repo
+  apt_repository:
+    repo: "ppa:kelleyk/emacs"
+    state: present
+  become: yes
+
+- name: install emacs
+  apt:
+    name: ['emacs26']
+    state: latest
+    install_recommends: yes
+    update_cache: yes
+  become: yes
+
+- name: Clone spacemacs develop
+  git:
+    repo: "{{spacemacs_repo}}"
+    dest: ~/.emacs.d/
+    accept_hostkey: yes
+    version: develop
+    key_file: "/home/{{username}}/.ssh/id_rsa"
+
+- name: Check if font is installed
+  stat: path='/home/{{username}}/.fonts/SourceCodePro-Bold.otf'
+  register: font_path
+
+- name: Download font files
+  get_url:
+    url: https://github.com/adobe-fonts/source-code-pro/archive/2.030R-ro/1.050R-it.zip
+    dest: /tmp/source-code-pro.zip 
+  when: font_path.stat.exists == false
+  become_user: "{{username}}"
+
+- name: Extract font files
+  unarchive:
+    src: /tmp/source-code-pro.zip 
+    dest: /tmp/
+  when: font_path.stat.exists == false
+  become_user: "{{username}}"
+
+- name: Create font dir
+  file:
+    path: '/home/{{username}}/.fonts/'
+    state: directory
+  when: font_path.stat.exists == false
+  become_user: "{{username}}"
+
+- name: Copy font files 
+  shell: cp -v /tmp/source-code-pro*/OTF/*.otf ~/.fonts/
+  when: font_path.stat.exists == false
+  become_user: "{{username}}"
+
+- name: Update fc-cache
+  shell: fc-cache -f
+  when: font_path.stat.exists == false
+  become_user: "{{username}}"
+
+- name: Create spacemacs configuration directory 
+  file:
+    path: '{{spacemacs_dotdirectory}}'
+    state: directory
+  become_user: "{{username}}"
+
+- name: spacemacs.el 
+  template:
+    src: emacs/spacemacs.el
+    dest: "/home/{{username}}/.spacemacs"
+    owner: "{{username}}"
+    group: "{{username}}"
+    force: no
+
+- name: spacemacs base.el 
+  template:
+    src: emacs/base.el
+    dest: "{{spacemacs_dotdirectory}}/base.el"

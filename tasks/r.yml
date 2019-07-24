@@ -1,0 +1,42 @@
+- name: apt key for R
+  apt_key:
+    keyserver: keyserver.ubuntu.com
+    id: E084DAB9
+  become: yes
+
+- name: apt repo for R
+  apt_repository:
+    repo: deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran35/
+    state: present
+  become: yes
+
+- name: install R packages
+  apt:
+    name: ['r-base', 'r-recommended', 'r-base-core']
+    state: latest
+    install_recommends: yes
+    update_cache: yes
+  become: yes
+
+- name: install deps for R pacakges
+  apt:
+    name: ['libssl-dev', 'libcurl4-openssl-dev', 'libxml2-dev']
+    state: present
+    install_recommends: yes
+    update_cache: yes
+  become: yes
+
+- name: create local R library folder
+  file:
+    path: "/home/{{username}}/R/x86_64-pc-linux-gnu-library/3.6/"
+    state: directory
+    recurse: yes
+
+- name: Clone cayekR my R utils package
+  git:
+    repo: git@github.com:cayek/cayekR.git
+    dest: '/home/{{username}}/projects/opensource/cayekR'
+    accept_hostkey: yes
+
+- name: install a few R packages
+  command: /usr/bin/Rscript --slave --no-save --no-restore-history /home/{{username}}/projects/opensource/cayekR/R/install.R

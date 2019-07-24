@@ -1,0 +1,4 @@
+- name: emacs mail.el 
+  template:
+    src: emacs/mail.el
+    dest: "{{spacemacs_dotdirectory}}/mail.el"

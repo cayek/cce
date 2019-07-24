@@ -1,0 +1,42 @@
+###
+### Complete Computing Environment Features
+###
+# Set these options to true or false to toggle specific features
+
+docker_enabled: false
+emacs_enabled: true
+org_enabled: true
+r_enabled: true
+
+###
+### General
+###
+# Sets your username
+username: "cayek"
+pyvenv_path: "/home/{{username}}/.pyvenv"
+extra_bin_path: "/home/{{username}}/.bin"
+
+###
+### emacs
+###
+
+spacemacs_dotdirectory: "/home/{{username}}/.spacemacs.d"
+spacemacs_repo: "git@github.com:cayek/spacemacs.git"
+
+###
+### Docker
+###
+# Where you want Docker to store images
+docker_image_directory: "{{ docker_home }}/data"
+
+# Where you want Docker to store its container data.
+docker_home: /mnt/docker
+
+# Docker storage driver, see https://docs.docker.com/storage/storagedriver/select-storage-driver/#supported-backing-filesystems
+# You might want to change this to ZFS, depending on your underlying filesystem.
+docker_storage_driver: overlay2
+
+###
+### inspiration
+###
+inspiration_enabled: True

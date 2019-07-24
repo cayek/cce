@@ -1,0 +1,4 @@
+- name: emacs org.el 
+  template:
+    src: emacs/org.el
+    dest: "{{spacemacs_dotdirectory}}/org.el"

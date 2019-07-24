@@ -1,0 +1,46 @@
+---
+- name: install core packages
+  apt:
+    name: ['zsh', 'ispell', 'aspell-fr', 'pass', 'vim', 'git', 'make', 'msmtp', 'isync', 'htop', 'curl', 'tmux', 'silversearcher-ag', 'ctags', 'unison']
+    state: latest
+    install_recommends: yes
+    update_cache: yes
+  become: yes
+
+- name: Install python ansible in virtualenv .pyvenv
+  pip: 
+    virtualenv_python: python3.6
+    virtualenv: "{{pyvenv_path}}"
+    virtualenv_site_packages: yes
+    name: ['ansible==2.7', 'ansible-lint']
+    state: present
+  
+- name: Install python tools in .pyvenv 
+  pip: 
+    virtualenv_python: python3.6
+    virtualenv: "{{pyvenv_path}}"
+    virtualenv_site_packages: yes
+    name: ['cookiecutter', 'mkdocs', 'dvc', 'academic']
+    state: present
+
+- name: Create symlink for python tools
+  file: 
+    src: '{{pyvenv_path}}/bin/{{ item }}'
+    dest: '{{extra_bin_path}}/{{ item }}'
+    state: link
+  with_items:
+    - cookiecutter
+    - mkdocs
+    - dvc
+    - academic
+    - ansible
+    - ansible-config
+    - ansible-connection
+    - ansible-console
+    - ansible-doc
+    - ansible-galaxy
+    - ansible-inventory
+    - ansible-playbook
+    - ansible-pull
+    - ansible-vault
+    - ansible-lint
