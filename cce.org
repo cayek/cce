@@ -190,6 +190,14 @@ make all
     update_cache: yes
   become: yes
 
+- name: install python core packages
+  apt:
+    name: ['python3', 'python3-pip', 'python3-virtualenv']
+    state: latest
+    install_recommends: yes
+    update_cache: yes
+  become: yes
+
 - name: Install python ansible in virtualenv .pyvenv
   pip: 
     virtualenv_python: python3.6
