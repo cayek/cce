@@ -6,6 +6,15 @@
 
 #+PROPERTY: header-args    :mkdirp yes
 
+My inspirations come from: 
+- [[https://github.com/IvanMalison/dotfiles][IvanMalison/dotfiles]]
+- [[http://doc.rix.si/cce/cce.html][Complete Computing Environment]]
+- [[http://pages.sachachua.com/.emacs.d/Sacha.html][Sacha Chua's Emacs configuration]]
+- [[http://doc.norang.ca/org-mode.html][Org Mode - Organize Your Life In Plain Text!]]
+- [[https://emacs.cafe/emacs/orgmode/gtd/2017/06/30/orgmode-gtd.html][Orgmode for GTD]]
+- [[https://www.scottharney.com/using-ansible-to-bootstap-my-work-environment_part_1/][Using Ansible to Bootstrap My Work Environment]]
+
+
 * Installation and Usage
 ** requirements
 #+BEGIN_SRC yaml :tangle requirements.yml
