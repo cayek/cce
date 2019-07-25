@@ -32,3 +32,10 @@
     insertbefore: BOF
     line: ZSH_TMUX_AUTOSTART=true
   when: (tmux_autostart | default(False))
+
+- name: tmux avoid autoquit
+  lineinfile: 
+    dest: "/home/{{username}}/.zshrc"
+    insertbefore: BOF
+    line: ZSH_TMUX_AUTOQUIT=false
+  when: (tmux_autostart | default(False))
