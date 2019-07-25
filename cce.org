@@ -39,16 +39,18 @@ ansible-vault create inventory.yml
 #+END_SRC
 ** Variables
 Create variables
-#+BEGIN_SRC yaml :tangle group_vars/all.yml
+#+BEGIN_SRC yaml :tangle group_vars/all_dist.yml
 ###
 ### Complete Computing Environment Features
 ###
 # Set these options to true or false to toggle specific features
 
-docker_enabled: false
+docker_enabled: true
 emacs_enabled: true
 org_enabled: true
 r_enabled: true
+tmux_enabled: true
+zsh_enabled: true
 
 ###
 ### General
@@ -79,18 +81,20 @@ docker_home: /mnt/docker
 docker_storage_driver: overlay2
 
 ###
+### tmux
+tmux_autostart: false
+
+###
 ### inspiration
 ###
 inspiration_enabled: True
 #+END_SRC
 
-define your personal variables in ./group_vars/: 
-#+BEGIN_SRC yaml :tangle group_vars/localhost_dist.yml
-###
-### Complete Computing Environment Personal variables
-###
-
+Create file:./group_vars/all.yml and edit it.
+#+BEGIN_SRC shell
+cp ./group_vars/all_dist.yml ./group_vars/all.yml
 #+END_SRC
+
 ** Main yaml Tasks file
 #+NAME: code_cce
 #+BEGIN_SRC yaml :tangle cce.yml
@@ -106,6 +110,7 @@ define your personal variables in ./group_vars/:
       tags:
         - docker
         - skip_ansible_lint
+      become: yes
       when: (docker_enabled | default(False))
       
   tasks:
@@ -128,6 +133,13 @@ define your personal variables in ./group_vars/:
     when: (r_enabled | default(False))
     tags: r
 
+  - import_tasks: tasks/zsh.yml
+    when: (zsh_enabled | default(False))
+    tags: zsh
+
+  - import_tasks: tasks/tmux.yml
+    when: (tmux_enabled | default(False))
+    tags: tmux
 
   - import_tasks: tasks/inspiration.yml
     when: (inspiration_enabled | default(False))
@@ -151,12 +163,14 @@ make all
   group:
     name: "{{ username }}"
     state: present
+  become: yes
 
 - name: Create user
   user:
     name: "{{ username }}"
     state: present
     group: "{{ username }}"
+  become: yes
 
 - name: Create extra bin path
   file:
@@ -164,6 +178,7 @@ make all
     group: "{{username}}"
     owner: "{{username}}"
     state: directory
+  become: yes
 
 - name: add {{extra_bin_path}} to path
   lineinfile: 
@@ -172,6 +187,8 @@ make all
     regexp: 'export PATH=(["]*)((?!.*?{{extra_bin_path}}).*?):\$PATH(["]*)$'
     line: export PATH=\1\2:{{extra_bin_path}}:$PATH\3
     backrefs: yes
+    create: yes
+  when: (zsh_enabled | default(False))
 
 - name: create projects folder
   file:
@@ -242,6 +259,20 @@ make all
 - name: install graphic packages
   apt:
     name: ['okular', 'eog', 'unison-gtk']
+    state: latest
+    install_recommends: yes
+    update_cache: yes
+  become: yes
+#+END_SRC
+* Web Browser
+*Features*
+- chromium browser
+** ansible
+
+#+BEGIN_SRC yaml :tangle tasks/xsoft.yml 
+- name: install web browser chromium
+  apt:
+    name: ['chromium-browser']
     state: latest
     install_recommends: yes
     update_cache: yes
@@ -1107,6 +1138,85 @@ Very nice package: [[https://github.com/alphapapa/helm-org-rifle][alphapapa/helm
       message-sendmail-envelope-from 'header
       mail-envelope-from 'header)
 #+END_SRC
+* zsh
+*Feature*
+- oh my zsh
+** ansible
+#+BEGIN_SRC yaml :tangle tasks/zsh.yml 
+- name: install zsh
+  apt:
+    name: ['zsh']
+    state: latest
+    install_recommends: yes
+    update_cache: yes
+  become: yes
+
+- name: Clone oh my zsh
+  git:
+    repo: "https://github.com/robbyrussell/oh-my-zsh.git"
+    dest: "/home/{{username}}/.oh-my-zsh"
+
+- name: zshrc
+  template:
+    src: zsh/.zshrc
+    dest: '/home/{{username}}/.zshrc'
+    force: no
+#+END_SRC
+** Template
+#+BEGIN_SRC shell :tangle templates/zsh/.zshrc
+export ZSH="/home/cayek/.oh-my-zsh"
+
+ZSH_THEME="agnoster"
+
+plugins=(git)
+
+source $ZSH/oh-my-zsh.sh
+
+## alias
+alias rm=rm -i
+alias cp=cp -i
+alias cp=cp -i
+#+END_SRC
+* tmux
+*Features*
+- oh my tmux
+** ansible
+#+BEGIN_SRC yaml :tangle tasks/tmux.yml 
+- name: install tmux
+  apt:
+    name: ['tmux']
+    state: latest
+    install_recommends: yes
+    update_cache: yes
+  become: yes
+
+- name: Clone oh my tmux
+  git:
+    repo: "https://github.com/gpakosz/.tmux.git"
+    dest: "/home/{{username}}/.tmux/"
+
+- name: link oh my tmux
+  file:
+    src: "/home/{{username}}/.tmux/.tmux.conf"
+    dest: "/home/{{username}}/.tmux.conf"
+    state: link
+
+- name: add zsh tmux plugin
+  lineinfile: 
+    dest: "/home/{{username}}/.zshrc"
+    state: present
+    regexp: 'plugins=\(((?!.*?(tmux)).*)\)$'
+    line: plugins=(\1 tmux)
+    backrefs: yes
+  when: (zsh_enabled | default(False))
+
+- name: tmux force auto start with zsh
+  lineinfile: 
+    dest: "/home/{{username}}/.zshrc"
+    insertbefore: BOF
+    line: ZSH_TMUX_AUTOSTART=true
+  when: (tmux_autostart | default(False))
+#+END_SRC
 * mail
 #+BEGIN_SRC yaml :tangle tasks/mail.yml 
 - name: emacs mail.el 
@@ -1236,6 +1346,7 @@ I use the  [[https://github.com/org-mime/org-mime][org-mime]] packages:
     state: present
   register: result
   until: result is succeeded
+  become: yes
 
 - name: 'Install docker-py'
   pip:
@@ -1249,24 +1360,28 @@ I use the  [[https://github.com/org-mime/org-mime][org-mime]] packages:
     path: "{{ docker_home }}"
     mode: 0755
     state: directory
+  become: yes
 
 - name: add user account to docker group
   user:
-    name: "{{ ansible_nas_user }}"
+    name: "{{ username }}"
     group: docker
     append: yes
+  become: yes
 
 - name: update docker home from install default
   template:
     src: docker/daemon.json
     dest: /etc/docker/daemon.json
   register: docker_config
+  become: yes
 
 - name: restart docker
   service:
      name: docker
      state: restarted
   when: docker_config.changed
+  become: yes
   tags:
     - skip_ansible_lint
 #+END_SRC

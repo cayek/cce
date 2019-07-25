@@ -28,7 +28,7 @@ help:
 ## Ansible
 
 all: tangle
-	ansible-playbook -i inventory.yml cce.yml 
+	ansible-playbook -i inventory.yml cce.yml
 
 retry: tangle
 	ansible-playbook --limit @/home/cayek/projects/opensource/bastion/bastion.retry -i inventory.yml cce.yml
@@ -44,6 +44,15 @@ org: tangle
 
 r: tangle
 	ansible-playbook -i inventory.yml cce.yml --tags "r"
+
+docker: tangle
+	ansible-playbook -i inventory.yml cce.yml --tags "docker"
+
+zsh: tangle
+	ansible-playbook -i inventory.yml cce.yml --tags "zsh"
+
+tmux: tangle
+	ansible-playbook -i inventory.yml cce.yml --tags "tmux"
 
 inspiration: tangle
 	ansible-playbook -i inventory.yml cce.yml --tags "inspiration"

@@ -5,3 +5,11 @@
     install_recommends: yes
     update_cache: yes
   become: yes
+
+- name: install web browser chromium
+  apt:
+    name: ['chromium-browser']
+    state: latest
+    install_recommends: yes
+    update_cache: yes
+  become: yes

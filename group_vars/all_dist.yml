@@ -3,10 +3,12 @@
 ###
 # Set these options to true or false to toggle specific features
 
-docker_enabled: false
+docker_enabled: true
 emacs_enabled: true
 org_enabled: true
 r_enabled: true
+tmux_enabled: true
+zsh_enabled: true
 
 ###
 ### General
@@ -35,6 +37,10 @@ docker_home: /mnt/docker
 # Docker storage driver, see https://docs.docker.com/storage/storagedriver/select-storage-driver/#supported-backing-filesystems
 # You might want to change this to ZFS, depending on your underlying filesystem.
 docker_storage_driver: overlay2
+
+###
+### tmux
+tmux_autostart: false
 
 ###
 ### inspiration

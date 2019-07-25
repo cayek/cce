@@ -3,12 +3,14 @@
   group:
     name: "{{ username }}"
     state: present
+  become: yes
 
 - name: Create user
   user:
     name: "{{ username }}"
     state: present
     group: "{{ username }}"
+  become: yes
 
 - name: Create extra bin path
   file:
@@ -16,6 +18,7 @@
     group: "{{username}}"
     owner: "{{username}}"
     state: directory
+  become: yes
 
 - name: add {{extra_bin_path}} to path
   lineinfile: 
@@ -24,6 +27,8 @@
     regexp: 'export PATH=(["]*)((?!.*?{{extra_bin_path}}).*?):\$PATH(["]*)$'
     line: export PATH=\1\2:{{extra_bin_path}}:$PATH\3
     backrefs: yes
+    create: yes
+  when: (zsh_enabled | default(False))
 
 - name: create projects folder
   file:

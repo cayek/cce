@@ -10,6 +10,7 @@
       tags:
         - docker
         - skip_ansible_lint
+      become: yes
       when: (docker_enabled | default(False))
       
   tasks:
@@ -32,6 +33,13 @@
     when: (r_enabled | default(False))
     tags: r
 
+  - import_tasks: tasks/zsh.yml
+    when: (zsh_enabled | default(False))
+    tags: zsh
+
+  - import_tasks: tasks/tmux.yml
+    when: (tmux_enabled | default(False))
+    tags: tmux
 
   - import_tasks: tasks/inspiration.yml
     when: (inspiration_enabled | default(False))
