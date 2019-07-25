@@ -81,7 +81,6 @@
 ;; Include current clocking task in clock reports
 (setq org-clock-report-include-clocking-task t)
 
-#+NAME: elisp_org_clock
 ;; Agenda clock report parameters
 (setq org-agenda-clockreport-parameter-plist
       (quote (:link t :maxlevel 1 :fileskip0 t :compact t :narrow 80)))
