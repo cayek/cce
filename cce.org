@@ -209,7 +209,7 @@ make all
 
 - name: install python core packages
   apt:
-    name: ['python3', 'python3-pip', 'python3-virtualenv']
+    name: ['python3', 'python3-pip', 'python3-virtualenv', 'python-pip']
     state: latest
     install_recommends: yes
     update_cache: yes
