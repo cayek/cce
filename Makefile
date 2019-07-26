@@ -45,6 +45,9 @@ org: tangle
 r: tangle
 	ansible-playbook -i inventory.yml cce.yml --tags "r"
 
+python: tangle
+	ansible-playbook -i inventory.yml cce.yml --tags "python"
+
 docker: tangle
 	ansible-playbook -i inventory.yml cce.yml --tags "docker"
 

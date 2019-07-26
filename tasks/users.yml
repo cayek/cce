@@ -28,6 +28,7 @@
     line: export PATH=\1\2:{{extra_bin_path}}:$PATH\3
     backrefs: yes
     create: yes
+    firstmatch: yes
   when: (zsh_enabled | default(False))
 
 - name: create projects folder

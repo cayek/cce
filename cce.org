@@ -49,6 +49,7 @@ docker_enabled: true
 emacs_enabled: true
 org_enabled: true
 r_enabled: true
+python_enabled: true
 tmux_enabled: true
 zsh_enabled: true
 
@@ -133,6 +134,11 @@ cp ./group_vars/all_dist.yml ./group_vars/all.yml
     when: (r_enabled | default(False))
     tags: r
 
+  - import_tasks: tasks/python.yml
+    when: (python_enabled | default(False))
+    tags: python
+
+
   - import_tasks: tasks/zsh.yml
     when: (zsh_enabled | default(False))
     tags: zsh
@@ -188,6 +194,7 @@ make all
     line: export PATH=\1\2:{{extra_bin_path}}:$PATH\3
     backrefs: yes
     create: yes
+    firstmatch: yes
   when: (zsh_enabled | default(False))
 
 - name: create projects folder
@@ -1258,7 +1265,7 @@ I use the  [[https://github.com/org-mime/org-mime][org-mime]] packages:
 *features*
 - relp in emacs with [[https://github.com/kaz-yos/eval-in-repl][eval-in-repl]]
 ** ansible
-#+BEGIN_SRC yaml :tangle tasks/python.yaml :mkdirp yes
+#+BEGIN_SRC yaml :tangle tasks/python.yml :mkdirp yes
 - name: install python core packages
   apt:
     name: [python, python-virtualenv, python-dev, python-setuptools, python-pip, python3, python3-setuptools, python3-dev, python3-pip]
@@ -1266,6 +1273,62 @@ I use the  [[https://github.com/org-mime/org-mime][org-mime]] packages:
     install_recommends: yes
     update_cache: yes
   become: yes
+
+- name: Check if conda is installed
+  stat: path=/home/{{username}}/miniconda3/
+  register: miniconda_path
+
+- name: get miniconda install script
+  get_url:
+    url: https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+    dest: /tmp/miniconda.sh
+  when: miniconda_path.stat.exists == false
+
+- name: Install miniconda
+  shell: bash /tmp/miniconda.sh -b -p /home/{{username}}/miniconda3
+  when: miniconda_path.stat.exists == false
+
+# see https://github.com/pyenv/pyenv/wiki/Common-build-problems#prerequisites
+- name: packages for pyenv
+  apt:
+    name: ['make', 'build-essential', 'libssl-dev', 'zlib1g-dev', 'libbz2-dev', 'libreadline-dev', 'libsqlite3-dev', 'wget', 'curl', 'llvm', 'libncurses5-dev', 'libncursesw5-dev', 'xz-utils', 'tk-dev', 'libffi-dev', 'liblzma-dev', 'python-openssl', 'git']
+    state: present
+    install_recommends: yes
+    update_cache: yes
+  become: yes
+
+- name: Clone pyenv
+  git:
+    repo: "https://github.com/pyenv/pyenv.git"
+    dest: ~/.pyenv/
+
+- name: pyenv global variable 
+  lineinfile: 
+    dest: "/home/{{username}}/.zshenv"
+    line:  echo 'export PYENV_ROOT="$HOME/.pyenv"'
+    create: yes
+  when: (zsh_enabled | default(False))
+
+- name: pyenv PATH
+  lineinfile: 
+    dest: "/home/{{username}}/.zshenv"
+    line:  export PATH="$PYENV_ROOT/bin:$PATH"
+    create: yes
+  when: (zsh_enabled | default(False))
+
+- name: init pyenv
+  lineinfile: 
+    dest: "/home/{{username}}/.zshenv"
+    line:  eval "$(pyenv init -)"
+    create: yes
+  when: (zsh_enabled | default(False))
+
+- name: init pyenv virtual env
+  lineinfile: 
+    dest: "/home/{{username}}/.zshenv"
+    line: eval "$(pyenv virtualenv-init -)"
+    create: yes
+  when: (zsh_enabled | default(False))
 
 #+END_SRC
 ** emacs

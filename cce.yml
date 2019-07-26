@@ -33,6 +33,11 @@
     when: (r_enabled | default(False))
     tags: r
 
+  - import_tasks: tasks/python.yml
+    when: (python_enabled | default(False))
+    tags: python
+
+
   - import_tasks: tasks/zsh.yml
     when: (zsh_enabled | default(False))
     tags: zsh
