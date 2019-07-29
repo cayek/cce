@@ -1262,9 +1262,17 @@ I use the  [[https://github.com/org-mime/org-mime][org-mime]] packages:
 * calendar
 * nextcloud
 * python
+:LOGBOOK:
+- Note taken on [2019-07-26 ven. 14:46] \\
+  TODO: install python 3.6 with pyenv and set as default + install jupyter jedi and ipython
+:END:
 *features*
 - relp in emacs with [[https://github.com/kaz-yos/eval-in-repl][eval-in-repl]]
 ** ansible
+:LOGBOOK:
+- Note taken on [2019-07-26 ven. 14:32] \\
+  Install conda: [[https://docs.anaconda.com/anaconda/install/silent-mode/#linux-macos][Installing in silent mode]]
+:END:
 #+BEGIN_SRC yaml :tangle tasks/python.yml :mkdirp yes
 - name: install python core packages
   apt:
@@ -1305,7 +1313,7 @@ I use the  [[https://github.com/org-mime/org-mime][org-mime]] packages:
 - name: pyenv global variable 
   lineinfile: 
     dest: "/home/{{username}}/.zshenv"
-    line:  echo 'export PYENV_ROOT="$HOME/.pyenv"'
+    line:  export PYENV_ROOT="$HOME/.pyenv"
     create: yes
   when: (zsh_enabled | default(False))
 
@@ -1322,6 +1330,11 @@ I use the  [[https://github.com/org-mime/org-mime][org-mime]] packages:
     line:  eval "$(pyenv init -)"
     create: yes
   when: (zsh_enabled | default(False))
+
+- name: Clone pyenv virtualenv
+  git:
+    repo: "https://github.com/pyenv/pyenv-virtualenv.git"
+    dest: ~/.pyenv/plugins/pyenv-virtualenv/
 
 - name: init pyenv virtual env
   lineinfile: 
