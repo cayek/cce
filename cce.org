@@ -1261,6 +1261,11 @@ I use the  [[https://github.com/org-mime/org-mime][org-mime]] packages:
 
 * calendar
 * nextcloud
+:LOGBOOK:
+- Note taken on [2019-07-29 lun. 15:41] \\
+  use webdav for all my host: seel [[https://docs.nextcloud.com/server/13/user_manual/files/access_webdav.html#creating-webdav-mounts-on-the-linux-command-line][Creating WebDAV mounts on the Linux command
+  line]].
+:END:
 * python
 :LOGBOOK:
 - Note taken on [2019-07-26 ven. 14:46] \\
