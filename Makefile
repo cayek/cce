@@ -36,6 +36,12 @@ retry: tangle
 that: tangle  ## run only task with that tag
 	ansible-playbook -i inventory.yml cce.yml --tags "that" -vvv
 
+users: tangle
+	ansible-playbook -i inventory.yml cce.yml --tags "users"
+
+core: tangle
+	ansible-playbook -i inventory.yml cce.yml --tags "core"
+
 emacs: tangle
 	ansible-playbook -i inventory.yml cce.yml --tags "emacs"
 

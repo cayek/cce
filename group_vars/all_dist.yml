@@ -18,6 +18,7 @@ zsh_enabled: true
 username: "cayek"
 pyvenv_path: "/home/{{username}}/.pyvenv"
 extra_bin_path: "/home/{{username}}/.bin"
+extra_zshcompletion_path: "/home/{{username}}/.zsh-completions"
 
 ###
 ### emacs

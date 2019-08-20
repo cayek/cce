@@ -31,6 +31,27 @@
     firstmatch: yes
   when: (zsh_enabled | default(False))
 
+- name: Create extra zsh completion folder
+  file:
+    path: '{{extra_zshcompletion_path}}'
+    group: "{{username}}"
+    owner: "{{username}}"
+    state: directory
+  become: yes
+
+- name: add zsh extra tab competition capabilites
+  blockinfile: 
+    dest: "/home/{{username}}/.zshrc"
+    insertafter: EOF
+    block: |
+      # folder of all of your autocomplete functions
+      fpath=({{extra_zshcompletion_path}} $fpath)
+      
+      # enable autocomplete function
+      autoload -U compinit
+      compinit
+  when: (zsh_enabled | default(False))
+
 - name: create projects folder
   file:
     path: "/home/{{username}}/projects/opensource/"

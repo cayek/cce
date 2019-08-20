@@ -60,6 +60,7 @@ zsh_enabled: true
 username: "cayek"
 pyvenv_path: "/home/{{username}}/.pyvenv"
 extra_bin_path: "/home/{{username}}/.bin"
+extra_zshcompletion_path: "/home/{{username}}/.zsh-completions"
 
 ###
 ### emacs
@@ -197,6 +198,27 @@ make all
     firstmatch: yes
   when: (zsh_enabled | default(False))
 
+- name: Create extra zsh completion folder
+  file:
+    path: '{{extra_zshcompletion_path}}'
+    group: "{{username}}"
+    owner: "{{username}}"
+    state: directory
+  become: yes
+
+- name: add zsh extra tab competition capabilites
+  blockinfile: 
+    dest: "/home/{{username}}/.zshrc"
+    insertafter: EOF
+    block: |
+      # folder of all of your autocomplete functions
+      fpath=({{extra_zshcompletion_path}} $fpath)
+      
+      # enable autocomplete function
+      autoload -U compinit
+      compinit
+  when: (zsh_enabled | default(False))
+
 - name: create projects folder
   file:
     path: "/home/{{username}}/projects/opensource/"
@@ -235,8 +257,8 @@ make all
     virtualenv_python: python3.6
     virtualenv: "{{pyvenv_path}}"
     virtualenv_site_packages: yes
-    name: ['cookiecutter', 'mkdocs', 'dvc', 'academic']
-    state: present
+    name: ['cookiecutter', 'mkdocs', 'dvc', 'academic', 'doit']
+    state: latest
 
 - name: Create symlink for python tools
   file: 
@@ -259,6 +281,7 @@ make all
     - ansible-pull
     - ansible-vault
     - ansible-lint
+    - doit
 #+END_SRC
 
 * Graphics software
@@ -1276,7 +1299,7 @@ I use the  [[https://github.com/org-mime/org-mime][org-mime]] packages:
 ** ansible
 :LOGBOOK:
 - Note taken on [2019-07-26 ven. 14:32] \\
-  Install conda: [[https://docs.anaconda.com/anaconda/install/silent-mode/#linux-macos][Installing in silent mode]]
+  TODO Install conda: [[https://docs.anaconda.com/anaconda/install/silent-mode/#linux-macos][Installing in silent mode]]
 :END:
 #+BEGIN_SRC yaml :tangle tasks/python.yml :mkdirp yes
 - name: install python core packages
@@ -1315,37 +1338,22 @@ I use the  [[https://github.com/org-mime/org-mime][org-mime]] packages:
     repo: "https://github.com/pyenv/pyenv.git"
     dest: ~/.pyenv/
 
-- name: pyenv global variable 
-  lineinfile: 
-    dest: "/home/{{username}}/.zshenv"
-    line:  export PYENV_ROOT="$HOME/.pyenv"
-    create: yes
-  when: (zsh_enabled | default(False))
-
-- name: pyenv PATH
-  lineinfile: 
-    dest: "/home/{{username}}/.zshenv"
-    line:  export PATH="$PYENV_ROOT/bin:$PATH"
-    create: yes
-  when: (zsh_enabled | default(False))
-
-- name: init pyenv
-  lineinfile: 
-    dest: "/home/{{username}}/.zshenv"
-    line:  eval "$(pyenv init -)"
-    create: yes
-  when: (zsh_enabled | default(False))
-
 - name: Clone pyenv virtualenv
   git:
     repo: "https://github.com/pyenv/pyenv-virtualenv.git"
     dest: ~/.pyenv/plugins/pyenv-virtualenv/
 
-- name: init pyenv virtual env
-  lineinfile: 
-    dest: "/home/{{username}}/.zshenv"
-    line: eval "$(pyenv virtualenv-init -)"
+- name: add zsh pyenv init
+  blockinfile: 
+    dest: "/home/{{username}}/.zshrc"
     create: yes
+    insertafter: EOF
+    block: |
+      export PYENV_ROOT="$HOME/.pyenv"
+      export PATH="$PYENV_ROOT/bin:/home/cayek/.bin:$PATH"
+      # pyenv
+      eval "$(pyenv init -)"
+      eval "$(pyenv virtualenv-init -)"
   when: (zsh_enabled | default(False))
 
 #+END_SRC
@@ -1545,4 +1553,18 @@ I use the  [[https://github.com/org-mime/org-mime][org-mime]] packages:
     repo: https://github.com/karlicoss/grasp.git
     dest: /home/{{username}}/.src/grasp
   become_user: "{{username}}"
+
+- name: Clone doit
+  git:
+    repo: https://github.com/pydoit/doit.git
+    dest: /home/{{username}}/.src/doit
+  become_user: "{{username}}"
+
+- name: doit zsh tab completion
+  copy:
+    src: /home/{{username}}/.src/doit/zsh_completion_doit
+    dest: "{{extra_zshcompletion_path}}/_doit"
+    mode: '0644'
+  become_user: "{{username}}"
+  when: (zsh_enabled | default(False))
 #+END_SRC

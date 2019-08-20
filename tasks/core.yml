@@ -28,8 +28,8 @@
     virtualenv_python: python3.6
     virtualenv: "{{pyvenv_path}}"
     virtualenv_site_packages: yes
-    name: ['cookiecutter', 'mkdocs', 'dvc', 'academic']
-    state: present
+    name: ['cookiecutter', 'mkdocs', 'dvc', 'academic', 'doit']
+    state: latest
 
 - name: Create symlink for python tools
   file: 
@@ -52,3 +52,4 @@
     - ansible-pull
     - ansible-vault
     - ansible-lint
+    - doit

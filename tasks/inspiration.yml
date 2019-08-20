@@ -61,3 +61,17 @@
     repo: https://github.com/karlicoss/grasp.git
     dest: /home/{{username}}/.src/grasp
   become_user: "{{username}}"
+
+- name: Clone doit
+  git:
+    repo: https://github.com/pydoit/doit.git
+    dest: /home/{{username}}/.src/doit
+  become_user: "{{username}}"
+
+- name: doit zsh tab completion
+  copy:
+    src: /home/{{username}}/.src/doit/zsh_completion_doit
+    dest: "{{extra_zshcompletion_path}}/_doit"
+    mode: '0644'
+  become_user: "{{username}}"
+  when: (zsh_enabled | default(False))
