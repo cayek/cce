@@ -1283,6 +1283,11 @@ I use the  [[https://github.com/org-mime/org-mime][org-mime]] packages:
 #+END_SRC
 
 * calendar
+*Features*
+- calendar sync with [[https://github.com/pimutils/vdirsyncer][pimutils/vdirsyncer]] and convert them to orgmode with
+  [[https://github.com/asoroa/ical2org.py][asoroa/ical2org.py]]
+- 
+
 * nextcloud
 :LOGBOOK:
 - Note taken on [2019-07-29 lun. 15:41] \\
@@ -1345,7 +1350,7 @@ I use the  [[https://github.com/org-mime/org-mime][org-mime]] packages:
 
 - name: add zsh pyenv init
   blockinfile: 
-    dest: "/home/{{username}}/.zshrc"
+    dest: "/home/{{username}}/.zshenv"
     create: yes
     insertafter: EOF
     block: |
@@ -1356,6 +1361,10 @@ I use the  [[https://github.com/org-mime/org-mime][org-mime]] packages:
       eval "$(pyenv virtualenv-init -)"
   when: (zsh_enabled | default(False))
 
+- name: spacemacs python.el 
+  template:
+    src: emacs/python.el
+    dest: "{{spacemacs_dotdirectory}}/python.el"
 #+END_SRC
 ** emacs
 #+BEGIN_SRC emacs-lisp :tangle ./templates/emacs/python.el
@@ -1423,6 +1432,7 @@ I use the  [[https://github.com/org-mime/org-mime][org-mime]] packages:
 * Bibliotheque
 *features*
 - Reference management in emacs with [[https://github.com/jkitchin/org-ref][jkitchin/org-ref]]
+- document anotator with [[https://github.com/weirdNox/org-noter][weirdNox/org-noter]]
 ** ansible
 ** emacs
 #+BEGIN_SRC emacs-lisp :tangle templates/emacs/bibliotheque.el

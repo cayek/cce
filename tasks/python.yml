@@ -41,7 +41,7 @@
 
 - name: add zsh pyenv init
   blockinfile: 
-    dest: "/home/{{username}}/.zshrc"
+    dest: "/home/{{username}}/.zshenv"
     create: yes
     insertafter: EOF
     block: |
@@ -51,3 +51,8 @@
       eval "$(pyenv init -)"
       eval "$(pyenv virtualenv-init -)"
   when: (zsh_enabled | default(False))
+
+- name: spacemacs python.el 
+  template:
+    src: emacs/python.el
+    dest: "{{spacemacs_dotdirectory}}/python.el"
