@@ -72,8 +72,6 @@
   template:
     src: emacs/spacemacs.el
     dest: "{{spacemacs_dotdirectory}}/spacemacs.el"
-    owner: "{{username}}"
-    group: "{{username}}"
 
 - name: spacemacs base.el 
   template:

@@ -385,10 +385,6 @@ Do not forget to load the file in your ~/.spacemacs:
   template:
     src: emacs/spacemacs.el
     dest: "{{spacemacs_dotdirectory}}/spacemacs.el"
-    owner: "{{username}}"
-    group: "{{username}}"
-
-
 #+END_SRC
 *** Spacemacs layers
 
