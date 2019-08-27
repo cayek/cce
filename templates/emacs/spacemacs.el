@@ -50,7 +50,6 @@ This function should only modify configuration layer settings."
      helm
      (auto-completion :variables auto-completion-enable-help-tooltip 'manual
                       auto-completion-enable-snippets-in-popup t
-                      auto-completion-private-snippets-directory "~/cce/snippets/"
                       )
      better-defaults
      emacs-lisp
