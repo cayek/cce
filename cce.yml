@@ -25,6 +25,9 @@
     when: (emacs_enabled | default(False))
     tags: emacs
 
+  - import_tasks: tasks/web.yml
+    tags: web
+
   - import_tasks: tasks/org.yml
     when: (org_enabled | default(False))
     tags: org

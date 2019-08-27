@@ -45,6 +45,9 @@ core: tangle
 emacs: tangle
 	ansible-playbook -i inventory.yml cce.yml --tags "emacs"
 
+web: tangle
+	ansible-playbook -i inventory.yml cce.yml --tags "web"
+
 org: tangle
 	ansible-playbook -i inventory.yml cce.yml --tags "org"
 

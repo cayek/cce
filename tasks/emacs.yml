@@ -62,15 +62,20 @@
     state: directory
   become_user: "{{username}}"
 
+- name: Create spacemacs user configuration directory 
+  file:
+    path: '{{spacemacs_dotdirectory}}/userconf/'
+    state: directory
+  become_user: "{{username}}"
+
 - name: spacemacs.el 
   template:
     src: emacs/spacemacs.el
-    dest: "/home/{{username}}/.spacemacs"
+    dest: "{{spacemacs_dotdirectory}}/spacemacs.el"
     owner: "{{username}}"
     group: "{{username}}"
-    force: no
 
 - name: spacemacs base.el 
   template:
     src: emacs/base.el
-    dest: "{{spacemacs_dotdirectory}}/base.el"
+    dest: "{{spacemacs_dotdirectory}}/userconf/base.el"

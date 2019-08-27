@@ -124,6 +124,7 @@
      (makefile . t)
      (emacs-lisp . t)
      (http . t)
+     (jupyter . t)
      ))
   )
 

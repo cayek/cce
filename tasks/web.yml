@@ -1,0 +1,18 @@
+- name: install web browser chromium
+  apt:
+    name: ['chromium-browser', 'w3m']
+    state: latest
+    install_recommends: yes
+    update_cache: yes
+  become: yes
+
+- name: clone w3m layers
+  git:
+    repo: https://github.com/venmos/w3m-layer.git
+    dest: "/home/{{username}}/.emacs.d/private/w3m"
+  become_user: "{{username}}"
+
+- name: spacemacs web.el 
+  template:
+    src: emacs/web.el
+    dest: "{{spacemacs_dotdirectory}}/userconf/web.el"

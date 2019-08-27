@@ -30,6 +30,7 @@ This function should only modify configuration layer settings."
    ;; List of configuration layers to load.
    dotspacemacs-configuration-layers
    '(
+     w3m
      pdf
      ess
      bibtex
@@ -64,7 +65,7 @@ This function should only modify configuration layer settings."
      (shell :variables
             shell-default-height 30
             shell-default-position 'bottom)
-     spell-checking
+     (spell-checking :variables spell-checking-enable-by-default nil)
      (syntax-checking :variables
                       syntax-checking-enable-by-default nil
                       syntax-checking-enable-tooltips nil)
@@ -83,7 +84,9 @@ This function should only modify configuration layer settings."
    ;; To use a local version of a package, use the `:location' property:
    ;; '(your-package :location "~/path/to/your-package/")
    ;; Also include the dependencies as they will not be resolved automatically.
-   dotspacemacs-additional-packages '(ob-ipython
+   dotspacemacs-additional-packages '(
+                                      jupyter
+                                      ob-ipython
                                       (ox-ipynb :location (recipe :fetcher github :repo "jkitchin/ox-ipynb"))
                                       (ox-hugo :location (recipe :fetcher github :repo "kaushalmodi/ox-hugo"))
                                       helm-org-rifle
@@ -503,5 +506,5 @@ before packages are loaded."
                      (load-file (concat (file-name-as-directory dir) f)))
                    ))
       (mapc load-it (directory-files dir nil "\\.el$"))))
-  (load-directory "{{spacemacs_dotdirectory}}")
+  (load-directory "{{spacemacs_dotdirectory}}/userconf/")
 )

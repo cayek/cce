@@ -55,4 +55,4 @@
 - name: spacemacs python.el 
   template:
     src: emacs/python.el
-    dest: "{{spacemacs_dotdirectory}}/python.el"
+    dest: "{{spacemacs_dotdirectory}}/userconf/python.el"

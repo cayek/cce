@@ -15,3 +15,7 @@
 
 ;; flyspell default
 (setq flyspell-default-dictionary "en_US")
+
+(global-emojify-mode)
+;; over write existing binding usin emoji
+(spacemacs/set-leader-keys "ie" 'emojify-insert-emoji)
