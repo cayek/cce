@@ -39,6 +39,41 @@
     repo: "https://github.com/pyenv/pyenv-virtualenv.git"
     dest: ~/.pyenv/plugins/pyenv-virtualenv/
 
+- name: Install virtualenv and virtualenvvrapper in .pyvenv
+  pip: 
+    virtualenv_python: python3.6
+    virtualenv: "{{pyvenv_path}}"
+    virtualenv_site_packages: yes
+    name: ['virtualenv', 'virtualenvwrapper']
+    state: latest
+
+- name: Create symlink for virtualenv
+  file: 
+    src: '{{pyvenv_path}}/bin/{{ item }}'
+    dest: '{{extra_bin_path}}/{{ item }}'
+    state: link
+  with_items:
+    - virtualenv
+    - virtualenv-clone
+
+- name: add bash pyenv init
+  blockinfile: 
+    dest: "/home/{{username}}/.bash_profile"
+    create: yes
+    insertafter: EOF
+    block: |
+      export PYENV_ROOT="$HOME/.pyenv"
+      export PATH="$PYENV_ROOT/bin:/home/cayek/.bin:$PATH"
+      # pyenv
+      eval "$(pyenv init -)"
+      eval "$(pyenv virtualenv-init -)"
+      # virtualenv
+      export WORKON_HOME=$HOME/.virtualenvs
+      export VIRTUALENVWRAPPER_PYTHON=/home/{{username}}/.pyvenv/bin/python
+      export PROJECT_HOME=$HOME/projects
+      source /home/{{username}}/.pyvenv/bin/virtualenvwrapper.sh
+  tags: that
+
 - name: add zsh pyenv init
   blockinfile: 
     dest: "/home/{{username}}/.zshenv"
@@ -50,7 +85,13 @@
       # pyenv
       eval "$(pyenv init -)"
       eval "$(pyenv virtualenv-init -)"
+      # virtualenv
+      export WORKON_HOME=$HOME/.virtualenvs
+      export VIRTUALENVWRAPPER_PYTHON=/home/{{username}}/.pyvenv/bin/python
+      export PROJECT_HOME=$HOME/projects
+      source /home/{{username}}/.pyvenv/bin/virtualenvwrapper.sh
   when: (zsh_enabled | default(False))
+  tags: that
 
 - name: spacemacs python.el 
   template:

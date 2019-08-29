@@ -69,6 +69,10 @@ tmux: tangle
 inspiration: tangle
 	ansible-playbook -i inventory.yml cce.yml --tags "inspiration"
 
+remote: tangle
+	ansible-playbook -i inventory.yml cce.yml --tags "remote"
+
+
 requirements: tangle
 	ansible-galaxy install -r requirements.yml
 

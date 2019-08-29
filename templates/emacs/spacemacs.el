@@ -85,7 +85,6 @@ This function should only modify configuration layer settings."
    ;; Also include the dependencies as they will not be resolved automatically.
    dotspacemacs-additional-packages '(
                                       jupyter
-                                      ob-ipython
                                       (ox-ipynb :location (recipe :fetcher github :repo "jkitchin/ox-ipynb"))
                                       (ox-hugo :location (recipe :fetcher github :repo "kaushalmodi/ox-hugo"))
                                       helm-org-rifle

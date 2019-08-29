@@ -1,0 +1,4 @@
+- name: tramp.el 
+  template:
+    src: emacs/tramp.el
+    dest: "{{spacemacs_dotdirectory}}/userconf/tramp.el"

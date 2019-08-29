@@ -111,14 +111,12 @@
 (global-set-key (kbd "<f9>") 'org-agenda)
 
 (with-eval-after-load 'org
-  (require 'ob-ipython)
   (org-babel-do-load-languages
    'org-babel-load-languages
    '(
      (shell . t)
      (python . t)
      (R . t)
-     (ipython . t)
      (dot . t)
      (org . t)
      (makefile . t)

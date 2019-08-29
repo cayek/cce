@@ -52,6 +52,7 @@ r_enabled: true
 python_enabled: true
 tmux_enabled: true
 zsh_enabled: true
+remote_enabled: true
 
 ###
 ### General
@@ -154,6 +155,10 @@ cp ./group_vars/all_dist.yml ./group_vars/all.yml
   - import_tasks: tasks/inspiration.yml
     when: (inspiration_enabled | default(False))
     tags: inspiration
+
+  - import_tasks: tasks/remote.yml
+    when: (remote_enabled | default(False))
+    tags: remote
 
 
 #+END_SRC
@@ -478,7 +483,6 @@ This function should only modify configuration layer settings."
    ;; Also include the dependencies as they will not be resolved automatically.
    dotspacemacs-additional-packages '(
                                       jupyter
-                                      ob-ipython
                                       (ox-ipynb :location (recipe :fetcher github :repo "jkitchin/ox-ipynb"))
                                       (ox-hugo :location (recipe :fetcher github :repo "kaushalmodi/ox-hugo"))
                                       helm-org-rifle
@@ -1146,14 +1150,12 @@ before packages are loaded."
 ** Org babel
 #+BEGIN_SRC emacs-lisp :tangle ./templates/emacs/org.el
 (with-eval-after-load 'org
-  (require 'ob-ipython)
   (org-babel-do-load-languages
    'org-babel-load-languages
    '(
      (shell . t)
      (python . t)
      (R . t)
-     (ipython . t)
      (dot . t)
      (org . t)
      (makefile . t)
@@ -1358,6 +1360,7 @@ I use the  [[https://github.com/org-mime/org-mime][org-mime]] packages:
 - Note taken on [2019-07-26 ven. 14:32] \\
   TODO Install conda: [[https://docs.anaconda.com/anaconda/install/silent-mode/#linux-macos][Installing in silent mode]]
 :END:
+*** Python core 
 #+BEGIN_SRC yaml :tangle tasks/python.yml :mkdirp yes
 - name: install python core packages
   apt:
@@ -1366,7 +1369,9 @@ I use the  [[https://github.com/org-mime/org-mime][org-mime]] packages:
     install_recommends: yes
     update_cache: yes
   become: yes
-
+#+END_SRC
+*** Conda
+#+BEGIN_SRC yaml :tangle tasks/python.yml :mkdirp yes
 - name: Check if conda is installed
   stat: path=/home/{{username}}/miniconda3/
   register: miniconda_path
@@ -1380,7 +1385,9 @@ I use the  [[https://github.com/org-mime/org-mime][org-mime]] packages:
 - name: Install miniconda
   shell: bash /tmp/miniconda.sh -b -p /home/{{username}}/miniconda3
   when: miniconda_path.stat.exists == false
-
+#+END_SRC
+*** Pyenv
+#+BEGIN_SRC yaml :tangle tasks/python.yml :mkdirp yes
 # see https://github.com/pyenv/pyenv/wiki/Common-build-problems#prerequisites
 - name: packages for pyenv
   apt:
@@ -1399,6 +1406,46 @@ I use the  [[https://github.com/org-mime/org-mime][org-mime]] packages:
   git:
     repo: "https://github.com/pyenv/pyenv-virtualenv.git"
     dest: ~/.pyenv/plugins/pyenv-virtualenv/
+#+END_SRC
+*** Virtualenv
+#+BEGIN_SRC yaml :tangle tasks/python.yml :mkdirp yes
+- name: Install virtualenv and virtualenvvrapper in .pyvenv
+  pip: 
+    virtualenv_python: python3.6
+    virtualenv: "{{pyvenv_path}}"
+    virtualenv_site_packages: yes
+    name: ['virtualenv', 'virtualenvwrapper']
+    state: latest
+
+- name: Create symlink for virtualenv
+  file: 
+    src: '{{pyvenv_path}}/bin/{{ item }}'
+    dest: '{{extra_bin_path}}/{{ item }}'
+    state: link
+  with_items:
+    - virtualenv
+    - virtualenv-clone
+
+#+END_SRC
+*** Setup shell
+#+BEGIN_SRC yaml :tangle tasks/python.yml :mkdirp yes
+- name: add bash pyenv init
+  blockinfile: 
+    dest: "/home/{{username}}/.bash_profile"
+    create: yes
+    insertafter: EOF
+    block: |
+      export PYENV_ROOT="$HOME/.pyenv"
+      export PATH="$PYENV_ROOT/bin:/home/cayek/.bin:$PATH"
+      # pyenv
+      eval "$(pyenv init -)"
+      eval "$(pyenv virtualenv-init -)"
+      # virtualenv
+      export WORKON_HOME=$HOME/.virtualenvs
+      export VIRTUALENVWRAPPER_PYTHON=/home/{{username}}/.pyvenv/bin/python
+      export PROJECT_HOME=$HOME/projects
+      source /home/{{username}}/.pyvenv/bin/virtualenvwrapper.sh
+  tags: that
 
 - name: add zsh pyenv init
   blockinfile: 
@@ -1411,8 +1458,16 @@ I use the  [[https://github.com/org-mime/org-mime][org-mime]] packages:
       # pyenv
       eval "$(pyenv init -)"
       eval "$(pyenv virtualenv-init -)"
+      # virtualenv
+      export WORKON_HOME=$HOME/.virtualenvs
+      export VIRTUALENVWRAPPER_PYTHON=/home/{{username}}/.pyvenv/bin/python
+      export PROJECT_HOME=$HOME/projects
+      source /home/{{username}}/.pyvenv/bin/virtualenvwrapper.sh
   when: (zsh_enabled | default(False))
-
+  tags: that
+#+END_SRC
+*** Emacs
+#+BEGIN_SRC yaml :tangle tasks/python.yml :mkdirp yes
 - name: spacemacs python.el 
   template:
     src: emacs/python.el
@@ -1629,4 +1684,30 @@ I use the  [[https://github.com/org-mime/org-mime][org-mime]] packages:
     mode: '0644'
   become_user: "{{username}}"
   when: (zsh_enabled | default(False))
+#+END_SRC
+* Work with remote server
+** Tramp and git-gutter bug
+Following [[https://github.com/nonsequitur/git-gutter-plus/issues/42#issuecomment-464463744][this answer]]
+#+BEGIN_SRC emacs-lisp :tangle ./templates/emacs/tramp.el
+(with-eval-after-load 'git-gutter+
+   (defun git-gutter+-remote-default-directory (dir file)
+     (let* ((vec (tramp-dissect-file-name file))
+            (method (tramp-file-name-method vec))
+            (user (tramp-file-name-user vec))
+            (domain (tramp-file-name-domain vec))
+            (host (tramp-file-name-host vec))
+            (port (tramp-file-name-port vec)))
+       (tramp-make-tramp-file-name method user domain host port dir)))
+
+   (defun git-gutter+-remote-file-path (dir file)
+     (let ((file (tramp-file-name-localname (tramp-dissect-file-name file))))
+       (replace-regexp-in-string (concat "\\`" dir) "" file))))
+#+END_SRC
+
+#+BEGIN_SRC yaml :tangle tasks/remote.yml
+- name: tramp.el 
+  template:
+    src: emacs/tramp.el
+    dest: "{{spacemacs_dotdirectory}}/userconf/tramp.el"
+
 #+END_SRC
