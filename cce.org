@@ -1173,17 +1173,20 @@ Very nice package: [[https://github.com/alphapapa/helm-org-rifle][alphapapa/helm
   (helm-org-rifle-directories "~/org/archive/")
   )
 
-(defun cayek:org-rifle-bookmark ()
+(defun cayek:org-rifle-all ()
   (interactive)
-  (helm-org-rifle-directories "~/mobile-org/")
+  (helm-org-rifle-directories '("~/mobile-org/" "~/org/archive/" "~/org/"))
   )
 
 ;; search
 (global-set-key (kbd "<f5>") 'helm-org-rifle-current-buffer)
 (global-set-key (kbd "<f6>") 'helm-org-rifle-agenda-files)
 (global-set-key (kbd "<f7>") 'cayek:org-rifle-archive)
-(global-set-key (kbd "<f8>") 'cayek:org-rifle-bookmark)
+(global-set-key (kbd "<f8>") 'cayek:org-rifle-all)
 #+END_SRC
+
+#+RESULTS:
+: cayek:org-rifle-all
 
 ** org projectile
 #+BEGIN_SRC emacs-lisp :tangle ./templates/emacs/org.el

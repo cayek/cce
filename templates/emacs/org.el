@@ -131,16 +131,16 @@
   (helm-org-rifle-directories "~/org/archive/")
   )
 
-(defun cayek:org-rifle-bookmark ()
+(defun cayek:org-rifle-all ()
   (interactive)
-  (helm-org-rifle-directories "~/mobile-org/")
+  (helm-org-rifle-directories '("~/mobile-org/" "~/org/archive/" "~/org/"))
   )
 
 ;; search
 (global-set-key (kbd "<f5>") 'helm-org-rifle-current-buffer)
 (global-set-key (kbd "<f6>") 'helm-org-rifle-agenda-files)
 (global-set-key (kbd "<f7>") 'cayek:org-rifle-archive)
-(global-set-key (kbd "<f8>") 'cayek:org-rifle-bookmark)
+(global-set-key (kbd "<f8>") 'cayek:org-rifle-all)
 
 (defvar cayek:topo_proj_template "
 :PROPERTIES:
