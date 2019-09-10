@@ -75,3 +75,21 @@
     mode: '0644'
   become_user: "{{username}}"
   when: (zsh_enabled | default(False))
+
+- name: Clone fastai
+  git:
+    repo: https://github.com/fastai/fastai.git
+    dest: /home/{{username}}/.src/fastai
+  become_user: "{{username}}"
+
+- name: Clone seaborn
+  git:
+    repo: https://github.com/mwaskom/seaborn.git
+    dest: /home/{{username}}/.src/seaborn
+  become_user: "{{username}}"
+
+- name: Clone xgboost
+  git:
+    repo: https://github.com/dmlc/xgboost.git
+    dest: /home/{{username}}/.src/xgboost
+  become_user: "{{username}}"
