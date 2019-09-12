@@ -22,6 +22,23 @@ extra_bin_path: "/home/{{username}}/.bin"
 extra_zshcompletion_path: "/home/{{username}}/.zsh-completions"
 
 ###
+### ssh
+###
+home_hostname: ""
+git_username: ""
+box_hostname: ""
+box_username: ""
+git_hostname: ""
+git_username: ""
+
+###
+### secrets
+###
+secret_url: ""
+secret_key: ""
+pass_repo: ""
+
+###
 ### emacs
 ###
 

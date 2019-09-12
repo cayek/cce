@@ -1,7 +1,7 @@
 - name: install web browser chromium
   apt:
     name: ['chromium-browser', 'w3m']
-    state: latest
+    state: present
     install_recommends: yes
     update_cache: yes
   become: yes

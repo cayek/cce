@@ -17,6 +17,9 @@
   - import_tasks: tasks/core.yml
     tags: core
 
+  - import_tasks: tasks/secret.yml
+    tags: secret
+
   - import_tasks: tasks/docker.yml
     when: (docker_enabled | default(False))
     tags: docker

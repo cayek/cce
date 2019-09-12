@@ -42,6 +42,9 @@ users: tangle
 core: tangle
 	ansible-playbook -i inventory.yml cce.yml --tags "core"
 
+secret: tangle
+	ansible-playbook -i inventory.yml cce.yml --tags "secret"
+
 emacs: tangle
 	ansible-playbook -i inventory.yml cce.yml --tags "emacs"
 

@@ -21,28 +21,6 @@
        dest=~/.src/Worgle
        accept_hostkey=yes
   become_user: "{{username}}"
-
-## install tomb: https://www.dyne.org/software/tomb/
-- name: Clone tomb
-  git: repo=https://github.com/dyne/Tomb.git
-       dest=~/.src/Tomb
-       accept_hostkey=yes
-  become_user: "{{username}}"
-
-- name: install packages dependencies for tomb
-  action: apt pkg={{ item }} state=present install_recommends=yes
-  become: yes
-  with_items:
-    - gnupg
-    - cryptsetup
-    - pinentry-curses
-    - steghide
-
-# - name: install tomb
-#   become: yes
-#   make:
-#     chdir: /home/{{local_username}}/.src/Tomb
-#     target: install
  
 - name: Fetch ansible nas
   git:

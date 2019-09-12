@@ -64,6 +64,23 @@ extra_bin_path: "/home/{{username}}/.bin"
 extra_zshcompletion_path: "/home/{{username}}/.zsh-completions"
 
 ###
+### ssh
+###
+home_hostname: ""
+git_username: ""
+box_hostname: ""
+box_username: ""
+git_hostname: ""
+git_username: ""
+
+###
+### secrets
+###
+secret_url: ""
+secret_key: ""
+pass_repo: ""
+
+###
 ### emacs
 ###
 
@@ -119,6 +136,9 @@ cp ./group_vars/all_dist.yml ./group_vars/all.yml
   tasks:
   - import_tasks: tasks/core.yml
     tags: core
+
+  - import_tasks: tasks/secret.yml
+    tags: secret
 
   - import_tasks: tasks/docker.yml
     when: (docker_enabled | default(False))
@@ -291,7 +311,74 @@ make all
     - ansible-lint
     - doit
 #+END_SRC
+* User secrets
 
+*features*
+- use tomb to keep secret files
+- use pass to keep password
+
+#+BEGIN_SRC yaml :tangle tasks/secret.yml 
+## install tomb: https://www.dyne.org/software/tomb/
+- name: Clone tomb
+  git:
+    repo: https://github.com/dyne/Tomb.git
+    dest: ~/.src/Tomb
+  become_user: "{{username}}"
+
+- name: install packages dependencies for tomb
+  apt:
+    name: [gnupg, cryptsetup, pinentry-curses, steghide]
+    state: present
+    install_recommends: yes
+    update_cache: yes
+  become: yes
+
+- name: Check if tomb is installed
+  stat:
+    path: /usr/local/bin/tomb
+  register: tomb_path
+
+- name: install tomb
+  make:
+    chdir: /home/{{username}}/.src/Tomb
+    target: install
+  become: yes
+  when: tomb_path.stat.exists == false
+
+- name: configure ssh
+  blockinfile: 
+    dest: "/home/{{username}}/.ssh/config"
+    create: yes
+    insertbefore: BOF
+    block: |
+      Host home
+          HostName {{home_hostname}}
+          IdentityFile ~/.ssh/id_rsa
+          User {{home_username}}
+          ForwardX11 no
+
+      Host box
+          HostName box.caye.fr
+          IdentityFile ~/.ssh/id_rsa
+          User {{box_username}}
+          ForwardX11 no
+
+      Host git
+          HostName {{git_hostname}}
+          IdentityFile ~/.ssh/id_rsa
+          User {{git_username}}
+          ForwardX11 no
+
+- name: retrieve secret tomb
+  get_url:
+    url: "{{secret_url}}"
+    dest: "/home/{{username}}/"
+
+- name: clone password store
+  git:
+    repo: "{{pass_repo}}"
+    dest: "/home/{{username}}/.password-store"
+#+END_SRC
 * Graphics software
 #+BEGIN_SRC yaml :tangle tasks/xsoft.yml 
 - name: install graphic packages
@@ -960,10 +1047,10 @@ before packages are loaded."
 - w3m and spacemacs layers [[https://github.com/venmos/w3m-layer][venmos/w3m-layer]]
 ** ansible
 #+BEGIN_SRC yaml :tangle tasks/web.yml 
-- name: install web browser chromium
+- name: install web browser
   apt:
     name: ['chromium-browser', 'w3m']
-    state: latest
+    state: present
     install_recommends: yes
     update_cache: yes
   become: yes
@@ -1633,28 +1720,6 @@ I use the  [[https://github.com/org-mime/org-mime][org-mime]] packages:
        dest=~/.src/Worgle
        accept_hostkey=yes
   become_user: "{{username}}"
-
-## install tomb: https://www.dyne.org/software/tomb/
-- name: Clone tomb
-  git: repo=https://github.com/dyne/Tomb.git
-       dest=~/.src/Tomb
-       accept_hostkey=yes
-  become_user: "{{username}}"
-
-- name: install packages dependencies for tomb
-  action: apt pkg={{ item }} state=present install_recommends=yes
-  become: yes
-  with_items:
-    - gnupg
-    - cryptsetup
-    - pinentry-curses
-    - steghide
-
-# - name: install tomb
-#   become: yes
-#   make:
-#     chdir: /home/{{local_username}}/.src/Tomb
-#     target: install
  
 - name: Fetch ansible nas
   git:
