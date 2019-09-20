@@ -1,4 +1,4 @@
-- name: install web browser chromium
+- name: install web browser
   apt:
     name: ['chromium-browser', 'w3m']
     state: present

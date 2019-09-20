@@ -1,0 +1,7 @@
+- name: install tool to write
+  apt:
+    name: ['texlive-full', 'pandoc', 'context', 'hugo']
+    state: latest
+    install_recommends: yes
+    update_cache: yes
+  become: yes

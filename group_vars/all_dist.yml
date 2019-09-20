@@ -11,6 +11,7 @@ python_enabled: true
 tmux_enabled: true
 zsh_enabled: true
 remote_enabled: true
+write_enable: false
 
 ###
 ### General

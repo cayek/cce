@@ -1,7 +1,7 @@
 (setq w3m-home-page "https://www.google.com")
 ;; W3M Home Page
-(setq w3m-default-display-inline-images t)
-(setq w3m-default-toggle-inline-images t)
+(setq w3m-default-display-inline-images nil)
+(setq w3m-default-toggle-inline-images nil)
 ;; W3M default display images
 (setq w3m-command-arguments '("-cookie" "-F"))
 (setq w3m-use-cookies t)

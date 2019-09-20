@@ -52,6 +52,10 @@
     when: (tmux_enabled | default(False))
     tags: tmux
 
+  - import_tasks: tasks/write.yml
+    when: (write_enabled | default(False))
+    tags: write
+
   - import_tasks: tasks/inspiration.yml
     when: (inspiration_enabled | default(False))
     tags: inspiration

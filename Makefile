@@ -60,6 +60,9 @@ r: tangle
 python: tangle
 	ansible-playbook -i inventory.yml cce.yml --tags "python"
 
+write: tangle
+	ansible-playbook -i inventory.yml cce.yml --tags "write"
+
 docker: tangle
 	ansible-playbook -i inventory.yml cce.yml --tags "docker"
 

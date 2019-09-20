@@ -53,6 +53,7 @@ python_enabled: true
 tmux_enabled: true
 zsh_enabled: true
 remote_enabled: true
+write_enable: false
 
 ###
 ### General
@@ -171,6 +172,10 @@ cp ./group_vars/all_dist.yml ./group_vars/all.yml
   - import_tasks: tasks/tmux.yml
     when: (tmux_enabled | default(False))
     tags: tmux
+
+  - import_tasks: tasks/write.yml
+    when: (write_enabled | default(False))
+    tags: write
 
   - import_tasks: tasks/inspiration.yml
     when: (inspiration_enabled | default(False))
@@ -1070,8 +1075,8 @@ before packages are loaded."
 #+BEGIN_SRC emacs-lisp :tangle ./templates/emacs/web.el
 (setq w3m-home-page "https://www.google.com")
 ;; W3M Home Page
-(setq w3m-default-display-inline-images t)
-(setq w3m-default-toggle-inline-images t)
+(setq w3m-default-display-inline-images nil)
+(setq w3m-default-toggle-inline-images nil)
 ;; W3M default display images
 (setq w3m-command-arguments '("-cookie" "-F"))
 (setq w3m-use-cookies t)
@@ -1081,6 +1086,10 @@ before packages are loaded."
 (setq w3m-view-this-url-new-session-in-background t)
 ;; W3M view url new session in background
 #+END_SRC
+
+#+RESULTS:
+: t
+
 * Orgmode
 :LOGBOOK:
 - Note taken on [2019-07-24 mer. 15:23] \\
@@ -1695,6 +1704,23 @@ I use the  [[https://github.com/org-mime/org-mime][org-mime]] packages:
 }
 #+END_SRC
 
+* Write 
+All you need to write in natural language.
+*Features*
+- latex, pandox etc
+- TODO grammar checker
+- hugo for blogging
+** ansible
+
+#+BEGIN_SRC yaml :tangle tasks/write.yml
+- name: install tool to write
+  apt:
+    name: ['texlive-full', 'pandoc', 'context', 'hugo']
+    state: latest
+    install_recommends: yes
+    update_cache: yes
+  become: yes
+#+END_SRC
 * Some Inspiring Projects
 #+BEGIN_SRC yaml :tangle tasks/inspiration.yml
 - name: Create src dir
