@@ -8,9 +8,8 @@
 (setq org-startup-with-inline-images t)
 (setq org-startup-folded t)
 
-;; Targets include this file and any file contributing to the agenda - up to 9 levels deep
-(setq org-refile-targets (quote ((nil :maxlevel . 2)
-                                 (org-agenda-files :maxlevel . 2))))
+(setq org-refile-targets `((nil :maxlevel . 2)
+                           (org-agenda-files :maxlevel . 2)))
 
 (setq org-directory "~/org/")
 (setq org-default-notes-file "~/org/INBOX.org")
@@ -30,6 +29,9 @@
               ("p" "Phone call" entry (file "~/org/INBOX.org")
                "* PHONE %? :PHONE:\n%U" :clock-in t :clock-resume t)
               )))
+
+;; quick key binding
+(global-set-key (kbd "<f4>") 'org-capture)
 
 ;; Tags with fast selection keys
 (setq org-tag-alist (quote ((:startgroup)
@@ -54,8 +56,35 @@
               ("MEETING" :foreground "forest green" :weight bold)
               ("PHONE" :foreground "forest green" :weight bold))))
 
-(setq org-agenda-files (quote ("~/org/"
-                               "~/mobile-org/inbox.org")))
+(setq org-agenda-files  `("~/org/INBOX.org"
+                          "~/org/se.org"
+                          "~/org/kaizen.org"
+                          "~/org/home.org"
+                          "~/mobile-org/inbox.org"
+                          ))
+
+
+;; custom agenda view
+;; TODO
+
+;; keybinding
+(fset 'buffer_agenda_cmd
+      "\C-ca<n")
+(defun cayek:buffer_agenda_view ()
+  (interactive)
+  (execute-kbd-macro (symbol-function 'buffer_agenda_cmd))
+  )
+
+(fset 'agenda_cmd
+      "\C-can")
+(defun cayek:agenda_view ()
+  (interactive)
+  (execute-kbd-macro (symbol-function 'agenda_cmd))
+  )
+
+
+(global-set-key (kbd "<f9>") 'cayek:agenda_view)
+(global-set-key (kbd "<f10>") 'cayek:buffer_agenda_view)
 
 ;; Resume clocking task when emacs is restarted
 (org-clock-persistence-insinuate)
@@ -94,7 +123,7 @@
 
 (defun cayek:open_cce()
   (interactive)
-  (find-file-existing "~/cce/cce.org")
+  (find-file-existing "~/projects/sysadmin/cce/cce.org")
   )
 
 (defun cayek:open_diary()
@@ -104,11 +133,8 @@
 
 ;; org files
 (global-set-key (kbd "<f1>") 'cayek:open_proj_inbox)
-(global-set-key (kbd "<f2>") 'cayek:open_proj_diary)
-(global-set-key (kbd "<f4>") 'cayek:open_cce)
-
-;; agenda key bindings
-(global-set-key (kbd "<f9>") 'org-agenda)
+(global-set-key (kbd "<f2>") 'cayek:open_diary)
+(global-set-key (kbd "<f3>") 'cayek:open_cce)
 
 (with-eval-after-load 'org
   (org-babel-do-load-languages
@@ -126,21 +152,26 @@
      ))
   )
 
+(defun cayek:org-rifle-diary ()
+  (interactive)
+  (helm-org-rifle-files '("~/org/diary.org"))
+  )
+
 (defun cayek:org-rifle-archive ()
   (interactive)
   (helm-org-rifle-directories "~/org/archive/")
   )
 
-(defun cayek:org-rifle-all ()
+(defun cayek:org-rifle-bookmark ()
   (interactive)
-  (helm-org-rifle-directories '("~/mobile-org/" "~/org/archive/" "~/org/"))
+  (helm-org-rifle-files '("~/mobile-org/bookmarks.org"))
   )
 
 ;; search
-(global-set-key (kbd "<f5>") 'helm-org-rifle-current-buffer)
+(global-set-key (kbd "<f5>") 'cayek:org-rifle-diary)
 (global-set-key (kbd "<f6>") 'helm-org-rifle-agenda-files)
-(global-set-key (kbd "<f7>") 'cayek:org-rifle-archive)
-(global-set-key (kbd "<f8>") 'cayek:org-rifle-all)
+(global-set-key (kbd "<f7>") 'cayek:org-rifle-bookmark)
+(global-set-key (kbd "<f8>") 'cayek:org-rifle-archive)
 
 (defvar cayek:topo_proj_template "
 :PROPERTIES:
