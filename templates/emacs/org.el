@@ -168,8 +168,8 @@
   )
 
 ;; search
-(global-set-key (kbd "<f5>") 'cayek:org-rifle-diary)
-(global-set-key (kbd "<f6>") 'helm-org-rifle-agenda-files)
+(global-set-key (kbd "<f6>") 'cayek:org-rifle-diary)
+(global-set-key (kbd "<f5>") 'helm-org-rifle-agenda-files)
 (global-set-key (kbd "<f7>") 'cayek:org-rifle-bookmark)
 (global-set-key (kbd "<f8>") 'cayek:org-rifle-archive)
 
