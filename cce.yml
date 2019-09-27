@@ -27,6 +27,10 @@
   - import_tasks: tasks/emacs.yml
     when: (emacs_enabled | default(False))
     tags: emacs
+  
+  - import_tasks: tasks/emacs_stable.yml
+    when: (stable_enabled | default(False))
+    tags: emacsstable
 
   - import_tasks: tasks/web.yml
     tags: web

@@ -1,6 +1,14 @@
-- name: install tool to write
+- name: install tool to compile natural language
   apt:
     name: ['texlive-full', 'pandoc', 'context', 'hugo']
+    state: latest
+    install_recommends: yes
+    update_cache: yes
+  become: yes
+
+- name: install learn new language
+  apt:
+    name: ['anki']
     state: latest
     install_recommends: yes
     update_cache: yes

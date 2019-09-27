@@ -102,6 +102,7 @@ This function should only modify configuration layer settings."
                                       ;; learning
                                       pamparam
                                       org-noter
+                                      anki-editor
                                       )
 
    ;; A list of packages that cannot be updated.

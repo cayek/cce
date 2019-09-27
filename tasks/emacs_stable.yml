@@ -1,0 +1,18 @@
+- name: Create dir for stable emacs
+  file:
+    path: '/home/{{username}}/stable/'
+    state: directory
+
+- name: Clone spacemacs stable
+  git:
+    repo: "https://github.com/syl20bnr/spacemacs"
+    dest: '/home/{{username}}/stable/.emacs.d/'
+    version: master
+
+- name: Create symlink
+  file: 
+    src: '/home/{{username}}/{{ item }}'
+    dest: '/home/{{username}}/stable/{{ item }}'
+    state: link
+  with_items:
+    - .fonts

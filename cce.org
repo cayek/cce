@@ -148,6 +148,10 @@ cp ./group_vars/all_dist.yml ./group_vars/all.yml
   - import_tasks: tasks/emacs.yml
     when: (emacs_enabled | default(False))
     tags: emacs
+  
+  - import_tasks: tasks/emacs_stable.yml
+    when: (stable_enabled | default(False))
+    tags: emacsstable
 
   - import_tasks: tasks/web.yml
     tags: web
@@ -592,6 +596,7 @@ This function should only modify configuration layer settings."
                                       ;; learning
                                       pamparam
                                       org-noter
+                                      anki-editor
                                       )
 
    ;; A list of packages that cannot be updated.
@@ -1047,6 +1052,29 @@ before packages are loaded."
     dest: "{{spacemacs_dotdirectory}}/userconf/base.el"
 #+END_SRC
 
+* stable emacs and spacemacs
+Because some time emacs develop is hard to follow :D
+** ansible
+#+BEGIN_SRC yaml :tangle tasks/emacs_stable.yml
+- name: Create dir for stable emacs
+  file:
+    path: '/home/{{username}}/stable/'
+    state: directory
+
+- name: Clone spacemacs stable
+  git:
+    repo: "https://github.com/syl20bnr/spacemacs"
+    dest: '/home/{{username}}/stable/.emacs.d/'
+    version: master
+
+- name: Create symlink
+  file: 
+    src: '/home/{{username}}/{{ item }}'
+    dest: '/home/{{username}}/stable/{{ item }}'
+    state: link
+  with_items:
+    - .fonts
+#+END_SRC
 * Web Browser
 *Features*
 - chromium browser
@@ -1743,23 +1771,34 @@ I use the  [[https://github.com/org-mime/org-mime][org-mime]] packages:
 }
 #+END_SRC
 
-* Write 
+* Natural language 
 All you need to write in natural language.
 *Features*
 - latex, pandox etc
 - TODO grammar checker
 - hugo for blogging
+- learn new language with [[https://apps.ankiweb.net/][anki]]
+- write orgmode anki card with [[https://github.com/louietan/anki-editor][louietan/anki-editor]]
 ** ansible
 
 #+BEGIN_SRC yaml :tangle tasks/write.yml
-- name: install tool to write
+- name: install tool to compile natural language
   apt:
     name: ['texlive-full', 'pandoc', 'context', 'hugo']
     state: latest
     install_recommends: yes
     update_cache: yes
   become: yes
+
+- name: install learn new language
+  apt:
+    name: ['anki']
+    state: latest
+    install_recommends: yes
+    update_cache: yes
+  become: yes
 #+END_SRC
+
 * Some Inspiring Projects
 #+BEGIN_SRC yaml :tangle tasks/inspiration.yml
 - name: Create src dir

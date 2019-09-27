@@ -48,6 +48,9 @@ secret: tangle
 emacs: tangle
 	ansible-playbook -i inventory.yml cce.yml --tags "emacs"
 
+emacs-stable: tangle
+	ansible-playbook -i inventory.yml cce.yml --tags "emacsstable"
+
 web: tangle
 	ansible-playbook -i inventory.yml cce.yml --tags "web"
 
