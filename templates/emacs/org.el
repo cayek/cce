@@ -56,7 +56,7 @@
               ("MEETING" :foreground "forest green" :weight bold)
               ("PHONE" :foreground "forest green" :weight bold))))
 
-(setq org-agenda-files  `("~/org/INBOX.org"
+(setq org-agenda-files  '("~/org/INBOX.org"
                           "~/org/se.org"
                           "~/org/kaizen.org"
                           "~/org/home.org"
@@ -156,6 +156,7 @@
   (interactive)
   (helm-org-rifle-files '("~/org/diary.org"))
   )
+
 
 (defun cayek:org-rifle-archive ()
   (interactive)

@@ -1,5 +1,5 @@
 (require 'org-ref)
 
-(setq org-ref-default-bibliography '("~/bibliotheque/papers/references.bib")
-      org-ref-pdf-directory "~/bibliotheque/papers/"
-      org-ref-bibliography-notes "~/bibliotheque/papers/notes.org")
+(setq org-ref-default-bibliography '("~/bibliotheque/bibliotheque.bib")
+      org-ref-pdf-directory "~/bibliotheque/"
+      org-ref-bibliography-notes "~/bibliotheque/bibliotheque.org")

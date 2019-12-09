@@ -81,7 +81,6 @@ inspiration: tangle
 remote: tangle
 	ansible-playbook -i inventory.yml cce.yml --tags "remote"
 
-
 requirements: tangle
 	ansible-galaxy install -r requirements.yml
 
