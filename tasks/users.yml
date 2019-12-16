@@ -54,6 +54,6 @@
 
 - name: create projects folder
   file:
-    path: "/home/{{username}}/projects/opensource/"
+    path: "/home/{{username}}/projects/"
     state: directory
     recurse: yes

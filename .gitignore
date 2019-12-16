@@ -1,4 +1,5 @@
 inventory.yml
-.vault_pass.txt
+.vault_pass*
 *.retry
 group_vars/all.yml
+local.yml

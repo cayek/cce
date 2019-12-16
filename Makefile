@@ -1,8 +1,8 @@
 .PHONY: tangle all that help
 .DEFAULT_GOAL := help
 
-ANSIBLE_VAULT_PASSWORD_FILE := .vault_pass.txt
-export ANSIBLE_VAULT_PASSWORD_FILE
+# ANSIBLE_VAULT_PASSWORD_FILE := .vault_pass.txt
+# export ANSIBLE_VAULT_PASSWORD_FILE
 
 #############
 ## Print help
@@ -26,6 +26,10 @@ help:
 
 ###########
 ## Ansible
+
+local: tangle
+	ansible-playbook -i inventory.yml local.yml
+
 
 all: tangle
 	ansible-playbook -i inventory.yml cce.yml

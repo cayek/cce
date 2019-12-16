@@ -1,0 +1,14 @@
+---
+- name: add emacs repo
+  apt_repository:
+    repo: "ppa:nextcloud-devs/client"
+    state: present
+  become: yes
+
+- name: install nextcloudcmd
+  apt:
+    name: ["nextcloud-client"]
+    state: latest
+    install_recommends: yes
+    update_cache: yes
+  become: yes

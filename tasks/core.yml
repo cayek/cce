@@ -1,7 +1,8 @@
 ---
 - name: install core packages
   apt:
-    name: ['zsh', 'ispell', 'aspell-fr', 'pass', 'vim', 'git', 'make', 'msmtp', 'isync', 'htop', 'curl', 'tmux', 'silversearcher-ag', 'ctags', 'unison']
+    name: ['zsh', 'ispell', 'aspell-fr', 'pass', 'vim', 'git', 'make', 'msmtp', 'isync', 'htop', 'curl', 
+    'tmux', 'silversearcher-ag', 'ctags', 'unison', 'virtualenv', "python3-notmuch"]
     state: latest
     install_recommends: yes
     update_cache: yes
@@ -15,20 +16,12 @@
     update_cache: yes
   become: yes
 
-- name: Install python ansible in virtualenv .pyvenv
-  pip: 
-    virtualenv_python: python3.6
-    virtualenv: "{{pyvenv_path}}"
-    virtualenv_site_packages: yes
-    name: ['ansible==2.7', 'ansible-lint']
-    state: present
-  
 - name: Install python tools in .pyvenv 
   pip: 
     virtualenv_python: python3.6
     virtualenv: "{{pyvenv_path}}"
     virtualenv_site_packages: yes
-    name: ['cookiecutter', 'mkdocs', 'dvc', 'academic', 'doit']
+    name: ['cookiecutter', 'mkdocs', 'dvc', 'academic', 'doit', 'afew']
     state: latest
 
 - name: Create symlink for python tools
@@ -41,15 +34,5 @@
     - mkdocs
     - dvc
     - academic
-    - ansible
-    - ansible-config
-    - ansible-connection
-    - ansible-console
-    - ansible-doc
-    - ansible-galaxy
-    - ansible-inventory
-    - ansible-playbook
-    - ansible-pull
-    - ansible-vault
-    - ansible-lint
     - doit
+    - afew

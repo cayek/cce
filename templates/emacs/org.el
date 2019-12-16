@@ -142,13 +142,13 @@
    '(
      (shell . t)
      (python . t)
-     (R . t)
+     ;; (R . t)
      (dot . t)
      (org . t)
      (makefile . t)
      (emacs-lisp . t)
-     (http . t)
-     (jupyter . t)
+     ;; (http . t)
+     ;; (jupyter . t)
      ))
   )
 

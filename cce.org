@@ -259,67 +259,50 @@ make all
 
 - name: create projects folder
   file:
-    path: "/home/{{username}}/projects/opensource/"
+    path: "/home/{{username}}/projects/"
     state: directory
     recurse: yes
 #+END_SRC
 * Core
 #+BEGIN_SRC yaml :tangle tasks/core.yml 
----
-- name: install core packages
-  apt:
-    name: ['zsh', 'ispell', 'aspell-fr', 'pass', 'vim', 'git', 'make', 'msmtp', 'isync', 'htop', 'curl', 'tmux', 'silversearcher-ag', 'ctags', 'unison']
-    state: latest
-    install_recommends: yes
-    update_cache: yes
-  become: yes
+  ---
+  - name: install core packages
+    apt:
+      name: ['zsh', 'ispell', 'aspell-fr', 'pass', 'vim', 'git', 'make', 'msmtp', 'isync', 'htop', 'curl', 
+      'tmux', 'silversearcher-ag', 'ctags', 'unison', 'virtualenv', "python3-notmuch"]
+      state: latest
+      install_recommends: yes
+      update_cache: yes
+    become: yes
 
-- name: install python core packages
-  apt:
-    name: ['python3', 'python3-pip', 'python3-virtualenv', 'python-pip']
-    state: latest
-    install_recommends: yes
-    update_cache: yes
-  become: yes
+  - name: install python core packages
+    apt:
+      name: ['python3', 'python3-pip', 'python3-virtualenv', 'python-pip']
+      state: latest
+      install_recommends: yes
+      update_cache: yes
+    become: yes
 
-- name: Install python ansible in virtualenv .pyvenv
-  pip: 
-    virtualenv_python: python3.6
-    virtualenv: "{{pyvenv_path}}"
-    virtualenv_site_packages: yes
-    name: ['ansible==2.7', 'ansible-lint']
-    state: present
-  
-- name: Install python tools in .pyvenv 
-  pip: 
-    virtualenv_python: python3.6
-    virtualenv: "{{pyvenv_path}}"
-    virtualenv_site_packages: yes
-    name: ['cookiecutter', 'mkdocs', 'dvc', 'academic', 'doit']
-    state: latest
+  - name: Install python tools in .pyvenv 
+    pip: 
+      virtualenv_python: python3.6
+      virtualenv: "{{pyvenv_path}}"
+      virtualenv_site_packages: yes
+      name: ['cookiecutter', 'mkdocs', 'dvc', 'academic', 'doit', 'afew']
+      state: latest
 
-- name: Create symlink for python tools
-  file: 
-    src: '{{pyvenv_path}}/bin/{{ item }}'
-    dest: '{{extra_bin_path}}/{{ item }}'
-    state: link
-  with_items:
-    - cookiecutter
-    - mkdocs
-    - dvc
-    - academic
-    - ansible
-    - ansible-config
-    - ansible-connection
-    - ansible-console
-    - ansible-doc
-    - ansible-galaxy
-    - ansible-inventory
-    - ansible-playbook
-    - ansible-pull
-    - ansible-vault
-    - ansible-lint
-    - doit
+  - name: Create symlink for python tools
+    file: 
+      src: '{{pyvenv_path}}/bin/{{ item }}'
+      dest: '{{extra_bin_path}}/{{ item }}'
+      state: link
+    with_items:
+      - cookiecutter
+      - mkdocs
+      - dvc
+      - academic
+      - doit
+      - afew
 #+END_SRC
 * User secrets
 
@@ -354,35 +337,6 @@ make all
     target: install
   become: yes
   when: tomb_path.stat.exists == false
-
-- name: configure ssh
-  blockinfile: 
-    dest: "/home/{{username}}/.ssh/config"
-    create: yes
-    insertbefore: BOF
-    block: |
-      Host home
-          HostName {{home_hostname}}
-          IdentityFile ~/.ssh/id_rsa
-          User {{home_username}}
-          ForwardX11 no
-
-      Host box
-          HostName box.caye.fr
-          IdentityFile ~/.ssh/id_rsa
-          User {{box_username}}
-          ForwardX11 no
-
-      Host git
-          HostName {{git_hostname}}
-          IdentityFile ~/.ssh/id_rsa
-          User {{git_username}}
-          ForwardX11 no
-
-- name: retrieve secret tomb
-  get_url:
-    url: "{{secret_url}}"
-    dest: "/home/{{username}}/"
 
 - name: clone password store
   git:
@@ -1314,13 +1268,13 @@ Because some time emacs develop is hard to follow :D
    '(
      (shell . t)
      (python . t)
-     (R . t)
+     ;; (R . t)
      (dot . t)
      (org . t)
      (makefile . t)
      (emacs-lisp . t)
-     (http . t)
-     (jupyter . t)
+     ;; (http . t)
+     ;; (jupyter . t)
      ))
   )
 #+END_SRC
@@ -1515,6 +1469,25 @@ I use the  [[https://github.com/org-mime/org-mime][org-mime]] packages:
   use webdav for all my host: seel [[https://docs.nextcloud.com/server/13/user_manual/files/access_webdav.html#creating-webdav-mounts-on-the-linux-command-line][Creating WebDAV mounts on the Linux command
   line]].
 :END:
+
+#+BEGIN_SRC yaml :tangle tasks/nextcloud.yml 
+  ---
+  - name: add emacs repo
+    apt_repository:
+      repo: "ppa:nextcloud-devs/client"
+      state: present
+    become: yes
+
+  - name: install nextcloudcmd
+    apt:
+      name: ["nextcloud-client"]
+      state: latest
+      install_recommends: yes
+      update_cache: yes
+    become: yes
+
+#+END_SRC
+
 * python
 :LOGBOOK:
 - Note taken on [2019-07-26 ven. 14:46] \\
