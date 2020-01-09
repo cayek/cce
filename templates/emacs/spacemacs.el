@@ -30,6 +30,7 @@ This function should only modify configuration layer settings."
    ;; List of configuration layers to load.
    dotspacemacs-configuration-layers
    '(
+     lsp
      epub
      w3m
      pdf
@@ -47,7 +48,8 @@ This function should only modify configuration layer settings."
      javascript
      yaml
      html
-     (python :variables python-test-runner 'pytest)
+     (python :variables python-test-runner 'pytest
+             python-backend 'lsp)
      helm
      (auto-completion :variables auto-completion-enable-help-tooltip 'manual
                       auto-completion-enable-snippets-in-popup t

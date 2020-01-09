@@ -1,0 +1,28 @@
+## mail perso
+IMAPAccount {{mail_account}}
+# Address to connect to
+Host {{smtp_host}}
+User {{smtp_user}}
+Pass {{imap_pass}}
+SSLType IMAPS
+# The following line should work. If get certificate errors, uncomment the two following lines and read the "Troubleshooting" section.
+CertificateFile /etc/ssl/certs/ca-certificates.crt
+Timeout 120
+
+IMAPStore {{mail_account}}-remote
+Account {{mail_account}}
+
+MaildirStore {{mail_account}}-local
+Subfolders Verbatim
+# The trailing "/" is important
+Path ~/mail/{{mail_account}}/
+Inbox ~/mail/{{mail_account}}/Inbox
+
+Channel {{mail_account}}
+Master :{{mail_account}}-remote:
+Slave :{{mail_account}}-local:
+Patterns * 
+# Automatically create missing mailboxes, both locally and on the server
+Create Both
+# Save the synchronization state files in the relevant directory
+SyncState *

@@ -56,6 +56,24 @@
     - virtualenv
     - virtualenv-clone
 
+- name: Install virtualenv and virtualenvvrapper in .pyvenv
+  pip: 
+    virtualenv_python: python3.6
+    virtualenv: "{{pyvenv_path}}"
+    virtualenv_site_packages: yes
+    name: ['python-language-server[all]']
+    state: latest
+
+
+- name: Create symlink for pyls and other tools
+  file: 
+    src: '{{pyvenv_path}}/bin/{{ item }}'
+    dest: '{{extra_bin_path}}/{{ item }}'
+    state: link
+  with_items:
+    - flake8
+    - pyls
+
 - name: add bash pyenv init
   blockinfile: 
     dest: "/home/{{username}}/.bash_profile"
@@ -63,7 +81,7 @@
     insertafter: EOF
     block: |
       export PYENV_ROOT="$HOME/.pyenv"
-      export PATH="$PYENV_ROOT/bin:/home/cayek/.bin:$PATH"
+      export PATH="$PYENV_ROOT/bin:/home/{{username}}/.bin:$PATH"
       # pyenv
       eval "$(pyenv init -)"
       eval "$(pyenv virtualenv-init -)"
@@ -81,7 +99,7 @@
     insertafter: EOF
     block: |
       export PYENV_ROOT="$HOME/.pyenv"
-      export PATH="$PYENV_ROOT/bin:/home/cayek/.bin:$PATH"
+      export PATH="$PYENV_ROOT/bin:/home/{{username}}/.bin:$PATH"
       # pyenv
       eval "$(pyenv init -)"
       eval "$(pyenv virtualenv-init -)"

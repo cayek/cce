@@ -13,13 +13,13 @@
     update_cache: yes
   become: yes
 
-- name: Clone spacemacs develop
-  git:
-    repo: "{{spacemacs_repo}}"
-    dest: ~/.emacs.d/
-    accept_hostkey: yes
-    version: develop
-    key_file: "/home/{{username}}/.ssh/id_rsa"
+# - name: Clone spacemacs develop
+#   git:
+#     repo: "{{spacemacs_repo}}"
+#     dest: ~/.emacs.d/
+#     accept_hostkey: yes
+#     version: develop
+#     key_file: "/home/{{username}}/.ssh/id_rsa"
 
 - name: Check if font is installed
   stat: path='/home/{{username}}/.fonts/SourceCodePro-Bold.otf'

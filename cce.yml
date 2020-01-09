@@ -12,12 +12,13 @@
         - skip_ansible_lint
       become: yes
       when: (docker_enabled | default(False))
-      
+
   tasks:
   - import_tasks: tasks/core.yml
     tags: core
 
   - import_tasks: tasks/secret.yml
+    when: (secret_enabled | default(False))
     tags: secret
 
   - import_tasks: tasks/docker.yml
@@ -27,7 +28,13 @@
   - import_tasks: tasks/emacs.yml
     when: (emacs_enabled | default(False))
     tags: emacs
-  
+
+  - import_tasks: tasks/mail.yml
+    when: (mail_enabled | default(False))
+    tags: mail
+
+
+
   - import_tasks: tasks/emacs_stable.yml
     when: (stable_enabled | default(False))
     tags: emacsstable
@@ -46,6 +53,10 @@
   - import_tasks: tasks/python.yml
     when: (python_enabled | default(False))
     tags: python
+
+  - import_tasks: tasks/bib.yml
+    when: (bib_enabled | default(False))
+    tags: bib
 
 
   - import_tasks: tasks/zsh.yml

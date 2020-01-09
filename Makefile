@@ -30,7 +30,6 @@ help:
 local: tangle
 	ansible-playbook -i inventory.yml local.yml
 
-
 all: tangle
 	ansible-playbook -i inventory.yml cce.yml
 
@@ -52,6 +51,9 @@ secret: tangle
 emacs: tangle
 	ansible-playbook -i inventory.yml cce.yml --tags "emacs"
 
+mail: tangle
+	ansible-playbook -i inventory.yml cce.yml --tags "mail"
+
 emacs-stable: tangle
 	ansible-playbook -i inventory.yml cce.yml --tags "emacsstable"
 
@@ -66,6 +68,9 @@ r: tangle
 
 python: tangle
 	ansible-playbook -i inventory.yml cce.yml --tags "python"
+
+bib: tangle
+	ansible-playbook -i inventory.yml cce.yml --tags "bib"
 
 write: tangle
 	ansible-playbook -i inventory.yml cce.yml --tags "write"

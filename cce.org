@@ -14,7 +14,6 @@ My inspirations come from:
 - [[https://emacs.cafe/emacs/orgmode/gtd/2017/06/30/orgmode-gtd.html][Orgmode for GTD]]
 - [[https://www.scottharney.com/using-ansible-to-bootstap-my-work-environment_part_1/][Using Ansible to Bootstrap My Work Environment]]
 
-
 * Installation and Usage
 ** requirements
 #+BEGIN_SRC yaml :tangle requirements.yml
@@ -63,6 +62,14 @@ username: "cayek"
 pyvenv_path: "/home/{{username}}/.pyvenv"
 extra_bin_path: "/home/{{username}}/.bin"
 extra_zshcompletion_path: "/home/{{username}}/.zsh-completions"
+
+###
+### mail
+###
+# Sets your username
+name: ""
+primary_mail: ""
+other_email: ""
 
 ###
 ### ssh
@@ -120,75 +127,86 @@ cp ./group_vars/all_dist.yml ./group_vars/all.yml
 
 #+NAME: code_cce
 #+BEGIN_SRC yaml :tangle cce.yml
----
-- hosts: all
+  ---
+  - hosts: all
 
-  pre_tasks:
-    - import_tasks: tasks/users.yml
-      tags: users
+    pre_tasks:
+      - import_tasks: tasks/users.yml
+        tags: users
 
-  roles:
-    - role: geerlingguy.docker
-      tags:
-        - docker
-        - skip_ansible_lint
-      become: yes
+    roles:
+      - role: geerlingguy.docker
+        tags:
+          - docker
+          - skip_ansible_lint
+        become: yes
+        when: (docker_enabled | default(False))
+
+    tasks:
+    - import_tasks: tasks/core.yml
+      tags: core
+
+    - import_tasks: tasks/secret.yml
+      when: (secret_enabled | default(False))
+      tags: secret
+
+    - import_tasks: tasks/docker.yml
       when: (docker_enabled | default(False))
-      
-  tasks:
-  - import_tasks: tasks/core.yml
-    tags: core
+      tags: docker
 
-  - import_tasks: tasks/secret.yml
-    tags: secret
+    - import_tasks: tasks/emacs.yml
+      when: (emacs_enabled | default(False))
+      tags: emacs
 
-  - import_tasks: tasks/docker.yml
-    when: (docker_enabled | default(False))
-    tags: docker
-
-  - import_tasks: tasks/emacs.yml
-    when: (emacs_enabled | default(False))
-    tags: emacs
-  
-  - import_tasks: tasks/emacs_stable.yml
-    when: (stable_enabled | default(False))
-    tags: emacsstable
-
-  - import_tasks: tasks/web.yml
-    tags: web
-
-  - import_tasks: tasks/org.yml
-    when: (org_enabled | default(False))
-    tags: org
-
-  - import_tasks: tasks/r.yml
-    when: (r_enabled | default(False))
-    tags: r
-
-  - import_tasks: tasks/python.yml
-    when: (python_enabled | default(False))
-    tags: python
+    - import_tasks: tasks/mail.yml
+      when: (mail_enabled | default(False))
+      tags: mail
 
 
-  - import_tasks: tasks/zsh.yml
-    when: (zsh_enabled | default(False))
-    tags: zsh
 
-  - import_tasks: tasks/tmux.yml
-    when: (tmux_enabled | default(False))
-    tags: tmux
+    - import_tasks: tasks/emacs_stable.yml
+      when: (stable_enabled | default(False))
+      tags: emacsstable
 
-  - import_tasks: tasks/write.yml
-    when: (write_enabled | default(False))
-    tags: write
+    - import_tasks: tasks/web.yml
+      tags: web
 
-  - import_tasks: tasks/inspiration.yml
-    when: (inspiration_enabled | default(False))
-    tags: inspiration
+    - import_tasks: tasks/org.yml
+      when: (org_enabled | default(False))
+      tags: org
 
-  - import_tasks: tasks/remote.yml
-    when: (remote_enabled | default(False))
-    tags: remote
+    - import_tasks: tasks/r.yml
+      when: (r_enabled | default(False))
+      tags: r
+
+    - import_tasks: tasks/python.yml
+      when: (python_enabled | default(False))
+      tags: python
+
+    - import_tasks: tasks/bib.yml
+      when: (bib_enabled | default(False))
+      tags: bib
+
+
+    - import_tasks: tasks/zsh.yml
+      when: (zsh_enabled | default(False))
+      tags: zsh
+
+    - import_tasks: tasks/tmux.yml
+      when: (tmux_enabled | default(False))
+      tags: tmux
+
+    - import_tasks: tasks/write.yml
+      when: (write_enabled | default(False))
+      tags: write
+
+    - import_tasks: tasks/inspiration.yml
+      when: (inspiration_enabled | default(False))
+      tags: inspiration
+
+    - import_tasks: tasks/remote.yml
+      when: (remote_enabled | default(False))
+      tags: remote
 
 
 #+END_SRC
@@ -244,18 +262,18 @@ make all
     state: directory
   become: yes
 
-- name: add zsh extra tab competition capabilites
-  blockinfile: 
-    dest: "/home/{{username}}/.zshrc"
-    insertafter: EOF
-    block: |
-      # folder of all of your autocomplete functions
-      fpath=({{extra_zshcompletion_path}} $fpath)
+# - name: add zsh extra tab competition capabilites
+#   blockinfile: 
+#     dest: "/home/{{username}}/.zshrc"
+#     insertafter: EOF
+#     block: |
+#       # folder of all of your autocomplete functions
+#       fpath=({{extra_zshcompletion_path}} $fpath)
       
-      # enable autocomplete function
-      autoload -U compinit
-      compinit
-  when: (zsh_enabled | default(False))
+#       # enable autocomplete function
+#       autoload -U compinit
+#       compinit
+#   when: (zsh_enabled | default(False))
 
 - name: create projects folder
   file:
@@ -371,13 +389,13 @@ make all
     update_cache: yes
   become: yes
 
-- name: Clone spacemacs develop
-  git:
-    repo: "{{spacemacs_repo}}"
-    dest: ~/.emacs.d/
-    accept_hostkey: yes
-    version: develop
-    key_file: "/home/{{username}}/.ssh/id_rsa"
+# - name: Clone spacemacs develop
+#   git:
+#     repo: "{{spacemacs_repo}}"
+#     dest: ~/.emacs.d/
+#     accept_hostkey: yes
+#     version: develop
+#     key_file: "/home/{{username}}/.ssh/id_rsa"
 
 - name: Check if font is installed
   stat: path='/home/{{username}}/.fonts/SourceCodePro-Bold.otf'
@@ -479,6 +497,7 @@ This function should only modify configuration layer settings."
    ;; List of configuration layers to load.
    dotspacemacs-configuration-layers
    '(
+     lsp
      epub
      w3m
      pdf
@@ -496,7 +515,8 @@ This function should only modify configuration layer settings."
      javascript
      yaml
      html
-     (python :variables python-test-runner 'pytest)
+     (python :variables python-test-runner 'pytest
+             python-backend 'lsp)
      helm
      (auto-completion :variables auto-completion-enable-help-tooltip 'manual
                       auto-completion-enable-snippets-in-popup t
@@ -1163,6 +1183,7 @@ Because some time emacs develop is hard to follow :D
 (setq org-agenda-files  '("~/org/INBOX.org"
                           "~/org/se.org"
                           "~/org/kaizen.org"
+                          "~/org/probayes.org"
                           "~/org/home.org"
                           "~/mobile-org/inbox.org"
                           ))
@@ -1429,13 +1450,107 @@ alias cp=cp -i
   when: (tmux_autostart | default(False))
 #+END_SRC
 * mail
+** ansible
 #+BEGIN_SRC yaml :tangle tasks/mail.yml 
-- name: emacs mail.el 
+- name: install mail packages
+  apt:
+    name: ['notmuch', 'isync', 'python-notmuch', 'msmtp']
+    state: present
+    install_recommends: yes
+    update_cache: yes
+  become: yes
+
+
+- name: emacs mail.el
   template:
     src: emacs/mail.el
     dest: "{{spacemacs_dotdirectory}}/userconf/mail.el"
+
+- name: notmuch config
+  template:
+    src: mail/.notmuch-config
+    dest: "/home/{{username}}/.notmuch-config"
+    force: no
+    mode: 0600
+
+- name: mbsync conf
+  template:
+    src: mail/.msmtprc
+    dest: '/home/{{username}}/.msmtprc'
+    force: no
+    mode: 0600
+
+- name: isync conf
+  template:
+    src: mail/.mbsyncrc
+    dest: '/home/{{username}}/.mbsyncrc'
+    force: no
+    mode: 0600
+
+- name: create afew dir
+  file:
+    path: '/home/{{username}}/.config/afew/'
+    state: directory
+
+- name: afew conf
+  template:
+    src: mail/afew
+    dest: '/home/{{username}}/.config/afew/config'
+    force: no
+    mode: 0600
+
+- name: create afew dir for notmuch hook
+  file:
+    path: '/home/{{username}}/mail/.notmuch/hooks/'
+    state: directory
+
+- name: afew hook 
+  template:
+    src: mail/post-new
+    dest: '/home/{{username}}/mail/.notmuch/hooks/post-new'
+    force: no
+    mode: 0700
+
+- name: create mail dir
+  file:
+    path: '/home/{{username}}/mail/{{mail_account}}/'
+    state: directory
+
+- name: script to fetch mail
+  template:
+    src: mail/mail.sh
+    dest: '/home/{{username}}/.bin/mail.sh'
+    force: yes
+    mode: 0700
+
+- name: create systemd dir
+  file:
+    path: '/home/{{username}}/.config/systemd/user/'
+    state: directory
+
+- name: create systemd mail service timer
+  template:
+    src: mail/mail.timer
+    dest: '/home/{{username}}/.config/systemd/user/mail.timer'
+    force: yes
+    mode: 0600
+
+- name: create systemd mail service
+  template:
+    src: mail/mail.service
+    dest: '/home/{{username}}/.config/systemd/user/mail.service'
+    force: yes
+    mode: 0600
+
+- name: start mail.timer
+  systemd:
+    daemon_reload: yes
+    state: started
+    name: mail.timer
+    user: yes
 #+END_SRC
-** emacs
+** templates
+*** emacs
 #+BEGIN_SRC emacs-lisp :tangle ./templates/emacs/mail.el
 ;; Outgoing email (msmtp + msmtpq)
 (setq send-mail-function 'sendmail-send-it
@@ -1445,7 +1560,7 @@ alias cp=cp -i
       mail-envelope-from 'header)
 #+END_SRC
 
-*** TODO Send html mail with orgmode
+**** TODO Send html mail with orgmode
 I use the  [[https://github.com/org-mime/org-mime][org-mime]] packages: 
 
 #+NAME: elisp_org_sendmail
@@ -1457,12 +1572,212 @@ I use the  [[https://github.com/org-mime/org-mime][org-mime]] packages:
                                                  :with-toc nil))
 #+END_SRC
 
+*** notmuch
+#+BEGIN_SRC text :tangle templates/mail/.notmuch-config
+# .notmuch-config - Configuration file for the notmuch mail system
+#
+# For more information about notmuch, see https://notmuchmail.org
+
+# Database configuration
+#
+# The only value supported here is 'path' which should be the top-level
+# directory where your mail currently exists and to where mail will be
+# delivered in the future. Files should be individual email messages.
+# Notmuch will store its database within a sub-directory of the path
+# configured here named ".notmuch".
+#
+[database]
+path=/home/{{username}}/mail
+
+# User configuration
+#
+# Here is where you can let notmuch know how you would like to be
+# addressed. Valid settings are
+#
+#	name		Your full name.
+#	primary_email	Your primary email address.
+#	other_email	A list (separated by ';') of other email addresses
+#			at which you receive email.
+#
+# Notmuch will use the various email addresses configured here when
+# formatting replies. It will avoid including your own addresses in the
+# recipient list of replies, and will set the From address based on the
+# address to which the original email was addressed.
+#
+[user]
+name={{name}}
+primary_email={{primary_email}}
+other_email={{other_email}}
+
+# Configuration for "notmuch new"
+#
+# The following options are supported here:
+#
+#	tags	A list (separated by ';') of the tags that will be
+#		added to all messages incorporated by "notmuch new".
+#
+#	ignore	A list (separated by ';') of file and directory names
+#		that will not be searched for messages by "notmuch new".
+#
+#		NOTE: *Every* file/directory that goes by one of those
+#		names will be ignored, independent of its depth/location
+#		in the mail store.
+#
+[new]
+tags=new
+ignore=
+
+# Search configuration
+#
+# The following option is supported here:
+#
+#	exclude_tags
+#		A ;-separated list of tags that will be excluded from
+#		search results by default.  Using an excluded tag in a
+#		query will override that exclusion.
+#
+[search]
+exclude_tags=deleted;spam;
+
+# Maildir compatibility configuration
+#
+# The following option is supported here:
+#
+#	synchronize_flags      Valid values are true and false.
+#
+#	If true, then the following maildir flags (in message filenames)
+#	will be synchronized with the corresponding notmuch tags:
+#
+#		Flag	Tag
+#		----	-------
+#		D	draft
+#		F	flagged
+#		P	passed
+#		R	replied
+#		S	unread (added when 'S' flag is not present)
+#
+#	The "notmuch new" command will notice flag changes in filenames
+#	and update tags, while the "notmuch tag" and "notmuch restore"
+#	commands will notice tag changes and update flags in filenames
+#
+[maildir]
+synchronize_flags=true
+
+#+END_SRC
+*** msmtp
+#+BEGIN_SRC text :tangle ./templates/mail/.msmtprc
+# Set default values for all following accounts.
+defaults
+auth           on
+tls            on
+tls_trust_file /etc/ssl/certs/ca-certificates.crt
+logfile        ~/.msmtp.log
+
+account {{mail_account}}
+host {{smtp_host}}
+from {{primary_email}}
+user {{smtp_user}}
+protocol smtp
+auth login
+port {{smtp_port}}
+password {{smtp_pass}}
+
+# Set a default account
+account default : {{mail_account}}
+#+END_SRC
+*** isync
+#+BEGIN_SRC text :tangle ./templates/mail/.mbsyncrc
+## mail perso
+IMAPAccount {{mail_account}}
+# Address to connect to
+Host {{smtp_host}}
+User {{smtp_user}}
+Pass {{imap_pass}}
+SSLType IMAPS
+# The following line should work. If get certificate errors, uncomment the two following lines and read the "Troubleshooting" section.
+CertificateFile /etc/ssl/certs/ca-certificates.crt
+Timeout 120
+
+IMAPStore {{mail_account}}-remote
+Account {{mail_account}}
+
+MaildirStore {{mail_account}}-local
+Subfolders Verbatim
+# The trailing "/" is important
+Path ~/mail/{{mail_account}}/
+Inbox ~/mail/{{mail_account}}/Inbox
+
+Channel {{mail_account}}
+Master :{{mail_account}}-remote:
+Slave :{{mail_account}}-local:
+Patterns * 
+# Automatically create missing mailboxes, both locally and on the server
+Create Both
+# Save the synchronization state files in the relevant directory
+SyncState *
+
+#+END_SRC
+*** script
+#+BEGIN_SRC shell :tangle ./templates/mail/mail.sh
+#!/usr/bin/env bash
+
+me=`whoami`
+NEW_MAIL=false
+mbsync -Va
+if ! ( notmuch new | grep "No new mail."); then
+    NEW_MAIL=true
+fi
+
+if [ $NEW_MAIL = true ]; then
+    if grep -qE "(Microsoft|WSL)" /proc/version &> /dev/null ; then
+        /home/$me/.bin/windows-notify.sh "New mail."
+    else
+        notify-send "New mail"
+    fi
+fi
+
+#+END_SRC
+*** afew
+#+BEGIN_SRC toml :tangle ./templates/mail/afew
+# This is the default filter chain
+[SpamFilter]
+[KillThreadsFilter]
+[ListMailsFilter]
+[ArchiveSentMailsFilter]
+[InboxFilter]
+#+END_SRC
+
+#+BEGIN_SRC shell :tangle ./templates/mail/post-new
+#!/bin/sh
+$HOME/.pyvenv/bin/afew --tag --new
+#+END_SRC
+*** systemd
+#+BEGIN_SRC systemd :tangle ./templates/mail/mail.timer
+[Unit]
+Description=Mail sync
+
+[Timer]
+OnBootSec=2m
+OnUnitActiveSec=5m
+Unit=mail.service
+
+[Install]
+WantedBy=timers.target
+#+END_SRC
+
+#+BEGIN_SRC systemd :tangle ./templates/mail/mail.service
+[Unit]
+Description=Fetch mail
+
+[Service]
+Type=oneshot
+ExecStart=/home/{{username}}/.bin/mail.sh
+#+END_SRC
 * calendar
 *Features*
 - calendar sync with [[https://github.com/pimutils/vdirsyncer][pimutils/vdirsyncer]] and convert them to orgmode with
   [[https://github.com/asoroa/ical2org.py][asoroa/ical2org.py]]
 - 
-
 * nextcloud
 :LOGBOOK:
 - Note taken on [2019-07-29 lun. 15:41] \\
@@ -1487,7 +1802,6 @@ I use the  [[https://github.com/org-mime/org-mime][org-mime]] packages:
     become: yes
 
 #+END_SRC
-
 * python
 :LOGBOOK:
 - Note taken on [2019-07-26 ven. 14:46] \\
@@ -1568,6 +1882,26 @@ I use the  [[https://github.com/org-mime/org-mime][org-mime]] packages:
     - virtualenv-clone
 
 #+END_SRC
+*** pyls and others utils
+#+BEGIN_SRC yaml :tangle tasks/python.yml :mkdirp yes
+- name: Install virtualenv and virtualenvvrapper in .pyvenv
+  pip: 
+    virtualenv_python: python3.6
+    virtualenv: "{{pyvenv_path}}"
+    virtualenv_site_packages: yes
+    name: ['python-language-server[all]']
+    state: latest
+
+
+- name: Create symlink for pyls and other tools
+  file: 
+    src: '{{pyvenv_path}}/bin/{{ item }}'
+    dest: '{{extra_bin_path}}/{{ item }}'
+    state: link
+  with_items:
+    - flake8
+    - pyls
+#+END_SRC
 *** Setup shell
 #+BEGIN_SRC yaml :tangle tasks/python.yml :mkdirp yes
 - name: add bash pyenv init
@@ -1577,7 +1911,7 @@ I use the  [[https://github.com/org-mime/org-mime][org-mime]] packages:
     insertafter: EOF
     block: |
       export PYENV_ROOT="$HOME/.pyenv"
-      export PATH="$PYENV_ROOT/bin:/home/cayek/.bin:$PATH"
+      export PATH="$PYENV_ROOT/bin:/home/{{username}}/.bin:$PATH"
       # pyenv
       eval "$(pyenv init -)"
       eval "$(pyenv virtualenv-init -)"
@@ -1595,7 +1929,7 @@ I use the  [[https://github.com/org-mime/org-mime][org-mime]] packages:
     insertafter: EOF
     block: |
       export PYENV_ROOT="$HOME/.pyenv"
-      export PATH="$PYENV_ROOT/bin:/home/cayek/.bin:$PATH"
+      export PATH="$PYENV_ROOT/bin:/home/{{username}}/.bin:$PATH"
       # pyenv
       eval "$(pyenv init -)"
       eval "$(pyenv virtualenv-init -)"
@@ -1682,8 +2016,16 @@ I use the  [[https://github.com/org-mime/org-mime][org-mime]] packages:
 - Reference management in emacs with [[https://github.com/jkitchin/org-ref][jkitchin/org-ref]]
 - document anotator with [[https://github.com/weirdNox/org-noter][weirdNox/org-noter]]
 ** ansible
+
+#+BEGIN_SRC yaml :tangle tasks/bib.yml
+- name: emacs bib.el
+  template:
+    src: emacs/bib.el
+    dest: "{{spacemacs_dotdirectory}}/userconf/bib.el"
+#+END_SRC
+
 ** emacs
-#+BEGIN_SRC emacs-lisp :tangle templates/emacs/bibliotheque.el
+#+BEGIN_SRC emacs-lisp :tangle templates/emacs/bib.el
 (require 'org-ref)
 
 (setq org-ref-default-bibliography '("~/bibliotheque/bibliotheque.bib")

@@ -1,4 +1,96 @@
-- name: emacs mail.el 
+- name: install mail packages
+  apt:
+    name: ['notmuch', 'isync', 'python-notmuch', 'msmtp']
+    state: present
+    install_recommends: yes
+    update_cache: yes
+  become: yes
+
+
+- name: emacs mail.el
   template:
     src: emacs/mail.el
     dest: "{{spacemacs_dotdirectory}}/userconf/mail.el"
+
+- name: notmuch config
+  template:
+    src: mail/.notmuch-config
+    dest: "/home/{{username}}/.notmuch-config"
+    force: no
+    mode: 0600
+
+- name: mbsync conf
+  template:
+    src: mail/.msmtprc
+    dest: '/home/{{username}}/.msmtprc'
+    force: no
+    mode: 0600
+
+- name: isync conf
+  template:
+    src: mail/.mbsyncrc
+    dest: '/home/{{username}}/.mbsyncrc'
+    force: no
+    mode: 0600
+
+- name: create afew dir
+  file:
+    path: '/home/{{username}}/.config/afew/'
+    state: directory
+
+- name: afew conf
+  template:
+    src: mail/afew
+    dest: '/home/{{username}}/.config/afew/config'
+    force: no
+    mode: 0600
+
+- name: create afew dir for notmuch hook
+  file:
+    path: '/home/{{username}}/mail/.notmuch/hooks/'
+    state: directory
+
+- name: afew hook 
+  template:
+    src: mail/post-new
+    dest: '/home/{{username}}/mail/.notmuch/hooks/post-new'
+    force: no
+    mode: 0700
+
+- name: create mail dir
+  file:
+    path: '/home/{{username}}/mail/{{mail_account}}/'
+    state: directory
+
+- name: script to fetch mail
+  template:
+    src: mail/mail.sh
+    dest: '/home/{{username}}/.bin/mail.sh'
+    force: yes
+    mode: 0700
+
+- name: create systemd dir
+  file:
+    path: '/home/{{username}}/.config/systemd/user/'
+    state: directory
+
+- name: create systemd mail service timer
+  template:
+    src: mail/mail.timer
+    dest: '/home/{{username}}/.config/systemd/user/mail.timer'
+    force: yes
+    mode: 0600
+
+- name: create systemd mail service
+  template:
+    src: mail/mail.service
+    dest: '/home/{{username}}/.config/systemd/user/mail.service'
+    force: yes
+    mode: 0600
+
+- name: start mail.timer
+  systemd:
+    daemon_reload: yes
+    state: started
+    name: mail.timer
+    user: yes

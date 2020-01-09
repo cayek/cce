@@ -1,0 +1,4 @@
+- name: emacs bib.el
+  template:
+    src: emacs/bib.el
+    dest: "{{spacemacs_dotdirectory}}/userconf/bib.el"
