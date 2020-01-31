@@ -200,6 +200,11 @@ cp ./group_vars/all_dist.yml ./group_vars/all.yml
       when: (write_enabled | default(False))
       tags: write
 
+    - import_tasks: tasks/syncthing.yml
+      when: (sync_enabled | default(False))
+      tags: sync
+
+
     - import_tasks: tasks/inspiration.yml
       when: (inspiration_enabled | default(False))
       tags: inspiration
@@ -497,6 +502,7 @@ This function should only modify configuration layer settings."
    ;; List of configuration layers to load.
    dotspacemacs-configuration-layers
    '(
+     cmake
      c-c++
      ;; ipython-notebook
      lsp
@@ -1802,6 +1808,31 @@ ExecStart=/home/{{username}}/.bin/mail.sh
       install_recommends: yes
       update_cache: yes
     become: yes
+
+#+END_SRC
+* TODO Syncthing
+
+#+BEGIN_SRC yaml :tangle tasks/syncthing.yml 
+---
+- name: apt key for syncthing
+  apt_key:
+    url: https://syncthing.net/release-key.txt
+    state: present
+  become: yes
+
+- name: add syncthing repo
+  apt_repository:
+    repo: "deb https://apt.syncthing.net/ syncthing stable"
+    state: present
+  become: yes
+
+- name: install syncthing
+  apt:
+    name: ["syncthing"]
+    state: latest
+    install_recommends: yes
+    update_cache: yes
+  become: yes
 
 #+END_SRC
 * python

@@ -71,6 +71,11 @@
     when: (write_enabled | default(False))
     tags: write
 
+  - import_tasks: tasks/syncthing.yml
+    when: (sync_enabled | default(False))
+    tags: sync
+
+
   - import_tasks: tasks/inspiration.yml
     when: (inspiration_enabled | default(False))
     tags: inspiration

@@ -75,6 +75,9 @@ bib: tangle
 write: tangle
 	ansible-playbook -i inventory.yml cce.yml --tags "write"
 
+sync: tangle
+	ansible-playbook -i inventory.yml cce.yml --tags "sync"
+
 docker: tangle
 	ansible-playbook -i inventory.yml cce.yml --tags "docker"
 
