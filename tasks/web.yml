@@ -1,6 +1,6 @@
 - name: install web browser
   apt:
-    name: ['chromium-browser', 'w3m']
+    name: ['w3m', 'firefox']
     state: present
     install_recommends: yes
     update_cache: yes

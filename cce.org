@@ -497,6 +497,8 @@ This function should only modify configuration layer settings."
    ;; List of configuration layers to load.
    dotspacemacs-configuration-layers
    '(
+     c-c++
+     ;; ipython-notebook
      lsp
      epub
      w3m
@@ -1052,13 +1054,13 @@ Because some time emacs develop is hard to follow :D
 #+END_SRC
 * Web Browser
 *Features*
-- chromium browser
+- firefox
 - w3m and spacemacs layers [[https://github.com/venmos/w3m-layer][venmos/w3m-layer]]
 ** ansible
 #+BEGIN_SRC yaml :tangle tasks/web.yml 
 - name: install web browser
   apt:
-    name: ['chromium-browser', 'w3m']
+    name: ['w3m', 'firefox']
     state: present
     install_recommends: yes
     update_cache: yes
@@ -1181,9 +1183,9 @@ Because some time emacs develop is hard to follow :D
 *** Agenda file and view
 #+BEGIN_SRC emacs-lisp :tangle ./templates/emacs/org.el
 (setq org-agenda-files  '("~/org/INBOX.org"
+                          "~/org/probayes.org"
                           "~/org/se.org"
                           "~/org/kaizen.org"
-                          "~/org/probayes.org"
                           "~/org/home.org"
                           "~/mobile-org/inbox.org"
                           ))
@@ -1295,7 +1297,7 @@ Because some time emacs develop is hard to follow :D
      (makefile . t)
      (emacs-lisp . t)
      ;; (http . t)
-     ;; (jupyter . t)
+     (jupyter . t)
      ))
   )
 #+END_SRC
@@ -2011,6 +2013,12 @@ ExecStart=/home/{{username}}/.bin/mail.sh
 - name: install a few R packages
   command: /usr/bin/Rscript --slave --no-save --no-restore-history /home/{{username}}/projects/opensource/cayekR/R/install.R
 #+END_SRC
+* TODO c-c++
+[[https://clang.llvm.org/extra/clangd/Installation.html][Installing clangd]]: 
+#+BEGIN_SRC shell
+sudo apt-get install clang-tools-8
+sudo update-alternatives --install /usr/bin/clangd clangd /usr/bin/clangd-8 100
+#+END_SRC
 * Bibliotheque
 *features*
 - Reference management in emacs with [[https://github.com/jkitchin/org-ref][jkitchin/org-ref]]
@@ -2195,6 +2203,14 @@ All you need to write in natural language.
     repo: https://github.com/dmlc/xgboost.git
     dest: /home/{{username}}/.src/xgboost
   become_user: "{{username}}"
+
+# too big with the dataset ! 
+# - name: Clone Semantic-Segmentation-Suite
+#   git:
+#     repo: https://github.com/GeorgeSeif/Semantic-Segmentation-Suite.git
+#     dest: /home/{{username}}/.src/Semantic-Segmentation-Suite
+#   become_user: "{{username}}"
+
 #+END_SRC
 * Work with remote server
 ** Tramp and git-gutter bug

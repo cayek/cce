@@ -30,6 +30,8 @@ This function should only modify configuration layer settings."
    ;; List of configuration layers to load.
    dotspacemacs-configuration-layers
    '(
+     c-c++
+     ;; ipython-notebook
      lsp
      epub
      w3m

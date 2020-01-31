@@ -57,9 +57,9 @@
               ("PHONE" :foreground "forest green" :weight bold))))
 
 (setq org-agenda-files  '("~/org/INBOX.org"
+                          "~/org/probayes.org"
                           "~/org/se.org"
                           "~/org/kaizen.org"
-                          "~/org/probayes.org"
                           "~/org/home.org"
                           "~/mobile-org/inbox.org"
                           ))
@@ -149,7 +149,7 @@
      (makefile . t)
      (emacs-lisp . t)
      ;; (http . t)
-     ;; (jupyter . t)
+     (jupyter . t)
      ))
   )
 

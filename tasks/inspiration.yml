@@ -71,3 +71,10 @@
     repo: https://github.com/dmlc/xgboost.git
     dest: /home/{{username}}/.src/xgboost
   become_user: "{{username}}"
+
+# too big with the dataset ! 
+# - name: Clone Semantic-Segmentation-Suite
+#   git:
+#     repo: https://github.com/GeorgeSeif/Semantic-Segmentation-Suite.git
+#     dest: /home/{{username}}/.src/Semantic-Segmentation-Suite
+#   become_user: "{{username}}"
