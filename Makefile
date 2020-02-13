@@ -101,3 +101,16 @@ requirements: tangle
 
 tangle: cce.org  ## tangle the orgmode main file
 	@emacs -Q --batch --eval "(progn (require 'ob-tangle) (dolist (file command-line-args-left) (with-current-buffer (find-file-noselect file) (org-babel-tangle))))" "$<"
+
+#############
+## python pkg
+
+install_py_pkg: ## install package in debug mode
+	@pip install -e .
+
+py_test:  ## test package
+	@python -m pytest ./cce/tests
+
+
+
+

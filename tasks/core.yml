@@ -21,7 +21,7 @@
     virtualenv_python: python3.6
     virtualenv: "{{pyvenv_path}}"
     virtualenv_site_packages: yes
-    name: ['cookiecutter', 'mkdocs', 'dvc', 'academic', 'doit', 'afew']
+    name: ['cookiecutter', 'mkdocs', 'dvc[all]', 'academic', 'doit', 'afew']
     state: latest
 
 - name: Create symlink for python tools
