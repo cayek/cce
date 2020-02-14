@@ -2000,6 +2000,7 @@ ExecStart=/home/{{username}}/.bin/mail.sh
 - install R
 - install R main packages for user
 ** ansible
+*** R core
 #+BEGIN_SRC yaml :tangle tasks/r.yml
 - name: apt key for R
   apt_key:
@@ -2044,6 +2045,22 @@ ExecStart=/home/{{username}}/.bin/mail.sh
 - name: install a few R packages
   command: /usr/bin/Rscript --slave --no-save --no-restore-history /home/{{username}}/projects/opensource/cayekR/R/install.R
 #+END_SRC
+*** TODO R java
+#+BEGIN_SRC yaml 
+- name: install R packages
+  apt:
+    name: ['default-jre', 'default-jdk']
+    state: latest
+    install_recommends: yes
+    update_cache: yes
+  become: yes
+
+# sudo R CMD javareconf
+# install.packages("rJava")
+
+
+#+END_SRC
+
 * TODO c-c++
 [[https://clang.llvm.org/extra/clangd/Installation.html][Installing clangd]]: 
 #+BEGIN_SRC shell
